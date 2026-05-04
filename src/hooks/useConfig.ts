@@ -50,11 +50,23 @@ export function useConfig() {
       ]);
       if (cancelled) return;
 
+      const useRows = (rows: Record<string, string>[] | null, name: string): rows is Record<string, string>[] => {
+        if (!rows) {
+          console.warn(`[config] "${name}" fetch failed → using defaults`);
+          return false;
+        }
+        if (rows.length === 0) {
+          console.warn(`[config] "${name}" returned no rows → using defaults`);
+          return false;
+        }
+        return true;
+      };
+
       const next: AppConfig = {
-        services: services
+        services: useRows(services, 'services')
           ? services.map<ServiceRow>((r) => ({ key: r.key, label: r.label, price: num(r.price) }))
           : DEFAULT_CONFIG.services,
-        cameras: cameras
+        cameras: useRows(cameras, 'cameras')
           ? cameras.map<CameraRow>((r) => ({
               type: ty(r.type),
               key: r.key,
@@ -63,7 +75,7 @@ export function useConfig() {
               note: r.note ?? '',
             }))
           : DEFAULT_CONFIG.cameras,
-        ceremonies: ceremonies
+        ceremonies: useRows(ceremonies, 'ceremonies')
           ? ceremonies.map<CeremonyRow>((r) => ({
               type: ty(r.type),
               key: r.key,
@@ -71,10 +83,10 @@ export function useConfig() {
               price: num(r.price),
             }))
           : DEFAULT_CONFIG.ceremonies,
-        addons: addons
+        addons: useRows(addons, 'addons')
           ? addons.map<AddonRow>((r) => ({ key: r.key, label: r.label, price: num(r.price) }))
           : DEFAULT_CONFIG.addons,
-        photographers: photographers
+        photographers: useRows(photographers, 'photographers')
           ? photographers.map<PhotographerRow>((r) => ({
               type: ty(r.type),
               key: r.key,
@@ -83,13 +95,22 @@ export function useConfig() {
               price: num(r.price),
             }))
           : DEFAULT_CONFIG.photographers,
-        settings: settings
+        settings: useRows(settings, 'settings')
           ? settings.reduce<SettingsMap>((acc, r) => {
               if (r.key) acc[r.key] = r.value ?? '';
               return acc;
             }, {})
           : DEFAULT_CONFIG.settings,
       };
+
+      console.info('[config] loaded', {
+        services: next.services.length,
+        cameras: next.cameras.length,
+        ceremonies: next.ceremonies.length,
+        addons: next.addons.length,
+        photographers: next.photographers.length,
+        settings: Object.keys(next.settings).length,
+      });
 
       setConfig(next);
       setLoaded(true);
