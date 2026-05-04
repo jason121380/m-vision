@@ -10,9 +10,11 @@
 //    若任何一個 URL 為空字串或抓取失敗，會 fallback 到 src/lib/defaults.ts
 //    的內建預設值，讓你即使沒接 Sheet 也能跑起來。
 //
-// 2. GOOGLE_FORM
-//    送出表單會 POST 到 formResponse endpoint。
-//    每個 entry.xxxxx 對應 Google 表單的一個欄位。
+// 2. SUBMISSION_ENDPOINT_URL
+//    Google Apps Script Web App 的部署網址（doPost endpoint）。
+//    部署完成後會拿到類似：
+//      https://script.google.com/macros/s/AKfycb.../exec
+//    把整段貼進去即可。Apps Script 範本見 apps-script/submit.gs。
 //
 // =============================================================================
 
@@ -27,29 +29,4 @@ export const CONFIG_SHEET_CSV_URLS = {
 
 export type ConfigKey = keyof typeof CONFIG_SHEET_CSV_URLS;
 
-// =============================================================================
-// 送出表單 / Submission target
-// =============================================================================
-// 把 Google Form 的「viewform」URL 換成「formResponse」即可。
-// entry IDs 從表單的「取得預先填入的連結」拿。
-
-export const GOOGLE_FORM = {
-  formResponseUrl: '',
-  entries: {
-    groom: '',
-    bride: '',
-    phone: '',
-    eventDate: '',
-    service: '',
-    weddingTime: '',
-    restaurant: '',
-    hotel: '',
-    cerWz: '',
-    cerYq: '',
-    cerZh: '',
-    makeupTime: '',
-    breakdown: '',
-    total: '',
-    signature: '',
-  },
-} as const;
+export const SUBMISSION_ENDPOINT_URL = '';

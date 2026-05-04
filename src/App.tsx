@@ -8,7 +8,7 @@ import { Page3 } from './components/Page3';
 import { Page4 } from './components/Page4';
 import { useConfig } from './hooks/useConfig';
 import { initialState, type FormState } from './types';
-import { submitToGoogleForm } from './lib/googleForm';
+import { submitToSheet } from './lib/submission';
 
 const TOTAL_PAGES = 4;
 
@@ -42,7 +42,7 @@ export function App() {
       return;
     }
     setModal({ type: 'submitting' });
-    const res = await submitToGoogleForm(state, config);
+    const res = await submitToSheet(state, config);
     if (res.ok) {
       setModal({ type: 'success' });
     } else {
