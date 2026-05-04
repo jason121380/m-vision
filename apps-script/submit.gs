@@ -24,7 +24,7 @@
  */
 
 // === 必填：回覆 Sheet 的 ID（網址 /d/ 後面那段）===
-var RESPONSE_SHEET_ID = '';
+var RESPONSE_SHEET_ID = '1wMqpUncxpn-j_TxXr27UJsovOc4EaiDvRRCAM239Qtc';
 
 // 接收表單回覆要寫到的分頁名稱（沒有就會自動建立）
 var RESPONSE_SHEET_NAME = 'responses';
