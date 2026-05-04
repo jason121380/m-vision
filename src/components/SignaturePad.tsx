@@ -12,6 +12,13 @@ export const SignaturePad = forwardRef<SignaturePadHandle, Props>(function Signa
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef(false);
   const dirtyRef = useRef(false);
+  const onChangeRef = useRef(onChange);
+
+  // Keep latest onChange in a ref so the setup effect below can stay stable
+  // (re-running setup() resets the canvas and would erase the user's signature).
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -55,7 +62,7 @@ export const SignaturePad = forwardRef<SignaturePadHandle, Props>(function Signa
     };
     const up = () => {
       if (drawingRef.current && dirtyRef.current) {
-        onChange?.(canvas.toDataURL('image/png'));
+        onChangeRef.current?.(canvas.toDataURL('image/png'));
       }
       drawingRef.current = false;
     };
@@ -81,7 +88,7 @@ export const SignaturePad = forwardRef<SignaturePadHandle, Props>(function Signa
       canvas.removeEventListener('touchend', up);
       window.removeEventListener('resize', onResize);
     };
-  }, [onChange]);
+  }, []);
 
   useImperativeHandle(
     ref,
@@ -93,12 +100,12 @@ export const SignaturePad = forwardRef<SignaturePadHandle, Props>(function Signa
         if (!ctx) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         dirtyRef.current = false;
-        onChange?.('');
+        onChangeRef.current?.('');
       },
       toDataURL: () => (canvasRef.current ? canvasRef.current.toDataURL('image/png') : ''),
       isEmpty: () => !dirtyRef.current,
     }),
-    [onChange],
+    [],
   );
 
   return (
