@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>M 視覺影像記錄公司</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'PingFang TC','Helvetica Neue',sans-serif;overflow-x:hidden;background:#07071A}
+
+/* Canvas stars background */
+#stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+/* Nebula overlay */
+.nebula{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 45%, rgba(70,50,130,.55) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 40% at 30% 35%, rgba(40,30,90,.4) 0%, transparent 55%),
+    radial-gradient(ellipse 45% 35% at 72% 55%, rgba(30,20,70,.35) 0%, transparent 50%),
+    radial-gradient(ellipse 30% 20% at 55% 20%, rgba(100,80,160,.2) 0%, transparent 45%)}
+
+.app{position:relative;z-index:1;min-height:100vh;max-width:430px;margin:0 auto;padding-bottom:70px}
+
+/* Brand header */
+.brand{text-align:center;padding:16px 20px 6px;
+  font-size:12px;letter-spacing:.2em;color:rgba(255,255,255,.45);font-weight:300}
+
+/* Pages */
+.pages{position:relative}
+.page{display:none;padding:0 16px 20px;animation:sIn .4s cubic-bezier(.22,1,.36,1) forwards}
+.page.active{display:block}
+.page.out{animation:sOut .22s ease forwards}
+.page.back-in{display:block;animation:sInB .4s cubic-bezier(.22,1,.36,1) forwards}
+@keyframes sIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+@keyframes sOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(-30px)}}
+@keyframes sInB{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:translateX(0)}}
+
+/* Page number */
+.pnum{font-size:72px;font-weight:700;color:rgba(255,255,255,.9);line-height:1;
+  letter-spacing:-2px;padding:4px 0 0 2px;margin-bottom:-8px}
+
+/* Section title */
+.stitle{text-align:center;margin:18px 0 12px}
+.stitle-zh{font-size:18px;letter-spacing:.25em;color:#fff;font-weight:300}
+.stitle-en{font-size:11px;letter-spacing:.1em;color:rgba(255,255,255,.4);margin-top:3px}
+
+/* Two-col header row */
+.col-header{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
+.col-h{text-align:left}
+.col-h-zh{font-size:15px;letter-spacing:.18em;color:rgba(255,255,255,.85);font-weight:300}
+.col-h-en{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.05em;margin-top:2px}
+.col-h-req{font-size:9px;color:rgba(220,160,160,.7);background:rgba(220,100,100,.1);
+  padding:1px 5px;border-radius:3px;margin-left:4px;vertical-align:middle}
+
+/* Dark card */
+.card{background:rgba(15,12,40,.65);border:1px solid rgba(255,255,255,.18);
+  border-radius:14px;overflow:hidden;backdrop-filter:blur(8px)}
+
+/* Two-col grid */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.col-right{grid-column:2}
+
+/* Option row inside card */
+.opt{display:flex;align-items:center;padding:12px 16px;gap:10px;
+  cursor:pointer;transition:background .15s;user-select:none}
+.opt:not(:last-child){border-bottom:1px solid rgba(255,255,255,.08)}
+.opt:active{background:rgba(255,255,255,.05)}
+.opt input{display:none}
+
+/* Radio circle */
+.rc{width:20px;height:20px;border-radius:50%;border:2px solid rgba(255,255,255,.55);
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.opt.sel{background:rgba(110,90,200,.28)}
+.opt.sel .rc{border-color:rgba(200,185,255,.95);background:rgba(150,130,255,.35);box-shadow:0 0 0 2px rgba(160,140,255,.25)}
+.rd{width:9px;height:9px;border-radius:50%;background:#fff;opacity:0;transform:scale(0);
+  transition:all .25s cubic-bezier(.34,1.56,.64,1)}
+.opt.sel .rd{opacity:1;transform:scale(1)}
+.opt-t{flex:1;font-size:14px;color:rgba(255,255,255,.85);letter-spacing:.05em}
+.opt-p{font-size:13px;color:rgba(255,255,255,.5);flex-shrink:0;font-variant-numeric:tabular-nums}
+.opt.sel .opt-t{color:#fff;font-weight:600}
+.opt.sel .opt-p{color:rgba(220,210,255,.95);font-weight:600}
+
+/* Small option (2-col cards) */
+.sopt{display:flex;align-items:center;padding:10px 12px;gap:8px;
+  cursor:pointer;transition:background .15s;user-select:none}
+.sopt:not(:last-child){border-bottom:1px solid rgba(255,255,255,.08)}
+.sopt:active{background:rgba(255,255,255,.05)}
+.sopt input{display:none}
+.src{width:17px;height:17px;border-radius:50%;border:1.5px solid rgba(255,255,255,.5);
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.sopt.sel{background:rgba(110,90,200,.35)}
+.sopt.sel .src{border-color:rgba(200,185,255,.95);background:rgba(150,130,255,.3)}
+.srd{width:7px;height:7px;border-radius:50%;background:#fff;opacity:0;transform:scale(0);
+  transition:all .22s cubic-bezier(.34,1.56,.64,1)}
+.sopt.sel .srd{opacity:1;transform:scale(1)}
+.sopt-t{flex:1;font-size:12px;color:rgba(255,255,255,.75);line-height:1.35}
+.sopt.sel .sopt-t{color:#fff;font-weight:600}
+.sopt.dis{opacity:.3;pointer-events:none}
+
+/* Date inputs */
+.date-row{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-bottom:4px}
+.dlbl{display:block;font-size:11px;color:rgba(255,255,255,.4);text-align:center;margin-bottom:5px;letter-spacing:.08em}
+.dinput{width:100%;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.25);
+  border-radius:10px;padding:12px 8px;font-size:16px;color:#fff;font-family:inherit;
+  text-align:center;outline:none;transition:border-color .2s;-webkit-appearance:none}
+.dinput:focus{border-color:rgba(255,255,255,.6)}
+.dinput::placeholder{color:rgba(255,255,255,.25)}
+
+/* Text input */
+.tinput{width:100%;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.22);
+  border-radius:12px;padding:13px 15px;font-size:15px;color:#fff;font-family:inherit;
+  outline:none;transition:border-color .2s;-webkit-appearance:none}
+.tinput:focus{border-color:rgba(255,255,255,.55)}
+.tinput::placeholder{color:rgba(255,255,255,.25)}
+
+/* Photographer card */
+.pcard{background:rgba(15,12,40,.65);border:1px solid rgba(255,255,255,.18);
+  border-radius:14px;overflow:hidden;backdrop-filter:blur(8px)}
+.popt{display:flex;align-items:center;padding:12px 14px;gap:10px;
+  cursor:pointer;transition:background .15s;user-select:none}
+.popt:not(:last-child){border-bottom:1px solid rgba(255,255,255,.08)}
+.popt:active{background:rgba(255,255,255,.05)}
+.popt input{display:none}
+.popt.dis{opacity:.35;pointer-events:none}
+.avatar{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.2);flex-shrink:0;display:flex;align-items:center;
+  justify-content:center;font-size:13px;color:rgba(255,255,255,.6);font-weight:500}
+.popt.sel{background:rgba(110,90,200,.35)}
+.popt.sel .avatar{border-color:rgba(200,180,255,.9);background:rgba(160,140,255,.25);box-shadow:0 0 0 2px rgba(180,160,255,.3)}
+.popt.sel .src{border-color:#fff;background:rgba(255,255,255,.12)}
+.popt.sel .srd{opacity:1;transform:scale(1)}
+.pinfo{flex:1}
+.pname{font-size:13px;color:rgba(255,255,255,.85);font-weight:400}
+.prole{font-size:10px;color:rgba(255,255,255,.35);margin-top:2px;letter-spacing:.02em}
+.popt.sel .pname{color:#fff;font-weight:600}
+.badge-no{font-size:9px;padding:1px 5px;border-radius:3px;
+  background:rgba(239,68,68,.2);color:#FC8181;font-weight:600;margin-left:4px}
+
+/* Section label for fields */
+.flbl{font-size:12px;color:rgba(255,255,255,.45);letter-spacing:.08em;margin-bottom:7px}
+.req-dot{width:4px;height:4px;border-radius:50%;background:rgba(200,140,140,.8);
+  display:inline-block;margin-right:4px;vertical-align:middle}
+.fg{margin-bottom:12px}
+
+/* Address chips */
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px}
+.chip{padding:6px 12px;border-radius:20px;font-size:12px;cursor:pointer;
+  border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.04);
+  color:rgba(255,255,255,.55);transition:all .2s;font-family:inherit;user-select:none}
+.chip.sel{border-color:rgba(160,140,255,.9);background:rgba(110,90,210,.55);color:#fff;font-weight:600;box-shadow:0 0 8px rgba(140,120,220,.35)}
+.chip:active{opacity:.7}
+
+/* Summary */
+.sitem{display:flex;align-items:flex-start;padding:9px 15px;gap:8px}
+.sitem:not(:last-child){border-bottom:1px solid rgba(255,255,255,.07)}
+.snum{font-size:11px;color:rgba(255,255,255,.3);min-width:18px;padding-top:2px;flex-shrink:0}
+.slbl{font-size:13px;color:rgba(255,255,255,.5);flex:1}
+.sval{font-size:13px;color:rgba(200,200,255,.9);text-align:right;font-variant-numeric:tabular-nums;flex-shrink:0}
+
+/* Total */
+.total-bar{display:flex;justify-content:space-between;align-items:center;
+  padding:13px 16px;background:rgba(100,90,200,.15);border-top:1px solid rgba(255,255,255,.12)}
+.total-lbl{font-size:13px;color:rgba(255,255,255,.6)}
+.total-amt{font-size:20px;font-weight:600;color:#C4B5FD;font-variant-numeric:tabular-nums}
+
+/* Contract */
+.contract{background:rgba(10,8,30,.75);border:1px solid rgba(255,255,255,.15);
+  border-radius:14px;max-height:420px;overflow-y:auto;
+  backdrop-filter:blur(8px);scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent}
+.ct-title{font-size:14px;font-weight:700;text-align:center;letter-spacing:.2em;
+  padding:16px 16px 6px;color:rgba(255,255,255,.9)}
+.ct-sub{font-size:11px;text-align:center;color:rgba(255,255,255,.35);padding-bottom:12px;
+  border-bottom:1px solid rgba(255,255,255,.08)}
+.ct-sec{font-size:11px;color:rgba(255,255,255,.75);line-height:1.85;padding:10px 16px;
+  border-bottom:1px solid rgba(255,255,255,.06)}
+.ct-sec b{color:rgba(200,190,255,.9);font-weight:600}
+.ct-sec.party{background:rgba(100,80,180,.12)}
+.ct-fill{color:#a8d8ff;font-weight:600}
+.ct-sig{padding:14px 16px;display:flex;justify-content:center;align-items:center;gap:6px;
+  font-size:12px;color:rgba(255,255,255,.4);letter-spacing:.08em;flex-wrap:wrap;
+  border-top:1px solid rgba(255,255,255,.06)}
+/* Signature pad */
+.sig-wrap{margin:0 16px 16px;padding-bottom:4px}
+.sig-lbl{font-size:11px;color:rgba(255,255,255,.35);letter-spacing:.08em;margin-bottom:8px;text-align:center}
+#sig-canvas{width:100%;height:140px;display:block;background:rgba(255,255,255,.04);
+  border:1.5px solid rgba(255,255,255,.18);border-radius:10px;touch-action:none;cursor:crosshair}
+.sig-actions{display:flex;justify-content:flex-end;margin-top:6px}
+.sig-clear{font-size:11px;color:rgba(255,255,255,.35);background:none;border:1px solid rgba(255,255,255,.15);
+  border-radius:6px;padding:4px 10px;cursor:pointer;letter-spacing:.05em}
+.sig-clear:active{background:rgba(255,255,255,.08)}
+
+/* Sig */
+.sig{display:flex;justify-content:center;align-items:center;gap:4px;padding:16px;
+  font-size:13px;color:rgba(255,255,255,.45);letter-spacing:.12em}
+.sig-input{background:none;border:none;border-bottom:1px solid rgba(255,255,255,.2);
+  color:rgba(255,255,255,.7);font-size:13px;text-align:center;outline:none;
+  padding:2px 4px;font-family:inherit;-moz-appearance:textfield}
+.sig-input::-webkit-inner-spin-button,.sig-input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.sig-input.y{width:68px}.sig-input.md{width:36px}
+
+/* Note */
+.note{font-size:11px;color:rgba(255,255,255,.3);text-align:center;padding:8px 12px;
+  line-height:1.7;letter-spacing:.03em}
+
+/* Step dots */
+.steps{display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 0 4px}
+.dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.2);transition:all .35s cubic-bezier(.22,1,.36,1)}
+.dot.active{width:20px;border-radius:4px;background:rgba(255,255,255,.75)}
+.dot.done{background:rgba(255,255,255,.4)}
+
+/* Bottom nav */
+.bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;
+  padding:10px 20px 18px;display:flex;justify-content:space-between;align-items:center;z-index:200;
+  background:linear-gradient(to top, rgba(7,7,26,0.95) 70%, transparent)}
+
+.btn-nav{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);
+  color:rgba(255,255,255,.8);font-size:14px;letter-spacing:.1em;padding:10px 22px;
+  border-radius:8px;font-family:inherit;cursor:pointer;transition:all .2s}
+.btn-nav:active{background:rgba(255,255,255,.2)}
+.btn-nav.primary{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.4);color:#fff;font-weight:500}
+.btn-nav.hidden{display:none}
+.btn-nav.invisible{visibility:hidden}
+
+/* Spacer */
+.sp{height:14px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<canvas id="stars"></canvas>
+<div class="nebula"></div>
+
+<div class="app">
+  <div class="brand">M 視覺影像記錄公司</div>
+  <div class="steps">
+    <div class="dot active" id="d1"></div>
+    <div class="dot" id="d2"></div>
+    <div class="dot" id="d3"></div>
+    <div class="dot" id="d4"></div>
+  </div>
+
+  <div class="pages">
+
+  <!-- ===== PAGE 1 ===== -->
+  <div class="page active" id="p1">
+    <div class="pnum">01</div>
+
+    <!-- 活動日期 -->
+    <div class="stitle">
+      <div class="stitle-zh">活 動 日 期</div>
+      <div class="stitle-en">Event Date</div>
+    </div>
+    <div class="date-row">
+      <div><label class="dlbl">年</label>
+        <input class="dinput" type="number" id="year" value="2026" placeholder="年份" oninput="st.year=this.value;sync()"></div>
+      <div><label class="dlbl">月</label>
+        <input class="dinput" type="number" id="month" placeholder="月" min="1" max="12" oninput="st.month=this.value;sync()"></div>
+      <div><label class="dlbl">日</label>
+        <input class="dinput" type="number" id="day" placeholder="日" min="1" max="31" oninput="st.day=this.value;sync()"></div>
+    </div>
+
+    <!-- 服務選項 -->
+    <div class="stitle" style="margin-top:16px">
+      <div class="stitle-zh">服 務 選 項</div>
+      <div class="stitle-en">Services</div>
+    </div>
+    <div class="card" style="max-width:260px;margin:0 auto">
+      <label class="opt" id="svc-video" onclick="setSvc('video',this)">
+        <div class="rc"><div class="rd"></div></div>
+        <div class="opt-t">動態錄影</div>
+      </label>
+      <label class="opt" id="svc-photo" onclick="setSvc('photo',this)">
+        <div class="rc"><div class="rd"></div></div>
+        <div class="opt-t">平面拍照</div>
+      </label>
+      <label class="opt" id="svc-both" onclick="setSvc('both',this)">
+        <div class="rc"><div class="rd"></div></div>
+        <div class="opt-t">動態＋平面</div>
+      </label>
+    </div>
+
+    <!-- 錄影 ＆ 拍照 side by side -->
+    <div class="g2" id="sec-vp-row" style="margin-top:18px">
+      <div id="sec-video">
+        <div class="col-h" style="margin-bottom:8px">
+          <div class="col-h-zh">錄 影</div>
+          <div class="col-h-en">Video recording</div>
+        </div>
+        <div class="card">
+          <label class="opt" id="vm-lunch" onclick="setVM('lunch',this)">
+            <div class="rc"><div class="rd"></div></div>
+            <div class="opt-t" style="font-size:13px">午 宴</div>
+            <div class="opt-p">22,000</div>
+          </label>
+          <label class="opt" id="vm-dinner" onclick="setVM('dinner',this)">
+            <div class="rc"><div class="rd"></div></div>
+            <div class="opt-t" style="font-size:13px">晚 宴</div>
+            <div class="opt-p">22,000</div>
+          </label>
+        </div>
+      </div>
+      <div id="sec-photo">
+        <div class="col-h" style="margin-bottom:8px">
+          <div class="col-h-zh">拍 照</div>
+          <div class="col-h-en">Photography</div>
+        </div>
+        <div class="card">
+          <label class="opt" id="pm-lunch" onclick="setPM('lunch',this)">
+            <div class="rc"><div class="rd"></div></div>
+            <div class="opt-t" style="font-size:13px">午 宴</div>
+            <div class="opt-p">16,000</div>
+          </label>
+          <label class="opt" id="pm-dinner" onclick="setPM('dinner',this)">
+            <div class="rc"><div class="rd"></div></div>
+            <div class="opt-t" style="font-size:13px">晚 宴</div>
+            <div class="opt-p">16,000</div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 機位 -->
+    <div id="sec-cam" style="margin-top:18px">
+      <div class="col-header">
+        <div class="col-h" id="cam-lbl-v">
+          <div class="col-h-zh">機 位 <span class="col-h-req">必選</span></div>
+          <div class="col-h-en">Number of Cameras</div>
+        </div>
+        <div class="col-h" id="cam-lbl-p">
+          <div class="col-h-zh">機 位 <span class="col-h-req">必選</span></div>
+          <div class="col-h-en">Number of Cameras</div>
+        </div>
+      </div>
+      <div class="g2">
+        <div class="card" id="vc-wrap">
+          <label class="sopt" id="vc-2" onclick="setVC('2cam',0,'二機',this)">
+            <div class="src"><div class="srd"></div></div>
+            <div class="sopt-t">二 機 0元 <span style="font-size:10px;opacity:.5">VG1 VA1</span></div>
+          </label>
+          <label class="sopt" id="vc-3" onclick="setVC('3cam',4000,'三機',this)">
+            <div class="src"><div class="srd"></div></div>
+            <div class="sopt-t">三 機 4000元 <span style="font-size:10px;opacity:.5">VG1 VA2</span></div>
+          </label>
+          <label class="sopt" id="vc-4" onclick="setVC('4cam',8000,'四機',this)">
+            <div class="src"><div class="srd"></div></div>
+            <div class="sopt-t">四 機 8000元 <span style="font-size:10px;opacity:.5">VG2 VA1 VB1</span></div>
+          </label>
+        </div>
+        <div class="card" id="pc-wrap">
+          <label class="sopt" id="pc-1" onclick="setPC('1cam',0,'單機',this)">
+            <div class="src"><div class="srd"></div></div>
+            <div class="sopt-t">單 機 0元 <span style="font-size:10px;opacity:.5">PG1</span></div>
+          </label>
+          <label class="sopt" id="pc-2" onclick="setPC('2cam',2000,'雙機',this)">
+            <div class="src"><div class="srd"></div></div>
+            <div class="sopt-t">雙 機 2000元 <span style="font-size:10px;opacity:.5">PG1 PA1</span></div>
+          </label>
+          <label class="sopt" id="pc-3" onclick="setPC('3cam',4000,'三機',this)">
+            <div class="src"><div class="srd"></div></div>
+            <div class="sopt-t">三 機 4000元 <span style="font-size:10px;opacity:.5">PG1 PA1 PB1</span></div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 儀式 -->
+    <div id="sec-cer" style="margin-top:18px">
+      <div class="col-header">
+        <div class="col-h" id="cer-lbl-v">
+          <div class="col-h-zh">儀 式 <span class="col-h-req">必選</span></div>
+          <div class="col-h-en">Ceremony Options</div>
+        </div>
+        <div class="col-h" id="cer-lbl-p">
+          <div class="col-h-zh">儀 式 <span class="col-h-req">必選</span></div>
+          <div class="col-h-en">Ceremony Options</div>
+        </div>
+      </div>
+      <div class="g2">
+        <div class="card" id="vcer-wrap">
+          <label class="sopt" id="vcer-0" onclick="setVCer(0,'無儀式',this)"><div class="src"><div class="srd"></div></div><div class="sopt-t">無儀式 0元</div></label>
+          <label class="sopt" id="vcer-1" onclick="setVCer(4000,'單儀式',this)"><div class="src"><div class="srd"></div></div><div class="sopt-t">單儀式 4000元</div></label>
+          <label class="sopt" id="vcer-2" onclick="setVCer(8000,'雙儀式',this)"><div class="src"><div class="srd"></div></div><div class="sopt-t">雙儀式 8000元</div></label>
+          <label class="sopt" id="vcer-3" onclick="setVCer(12000,'三儀式',this)"><div class="src"><div class="srd"></div></div><div class="sopt-t">三儀式 12000元</div></label>
+        </div>
+        <div class="card" id="pcer-wrap">
+          <label class="sopt" id="pcer-0" onclick="setPCer(0,'無儀式',this)"><div class="src"><div class="srd"></div></div><div class="sopt-t">無儀式 0元</div></label>
+          <label class="sopt" id="pcer-1" onclick="setPCer(3000,'單儀式',this)"><div class="src"><div class="srd"></div></div><div class="sopt-t">單儀式 3000元</div></label>
+          <label class="sopt" id="pcer-2" onclick="setPCer(6000,'雙儀式',this)"><div class="src"><div class="srd"></div></div><div class="sopt-t">雙儀式 6000元</div></label>
+          <label class="sopt" id="pcer-3" onclick="setPCer(9000,'三儀式',this)"><div class="src"><div class="srd"></div></div><div class="sopt-t">三儀式 9000元</div></label>
+        </div>
+      </div>
+    </div>
+    <div class="sp"></div>
+  </div>
+
+  <!-- ===== PAGE 2 ===== -->
+  <div class="page" id="p2">
+    <div class="pnum">02</div>
+
+    <!-- 加選項目 -->
+    <div class="stitle">
+      <div class="stitle-zh">加 選 項 目</div>
+    </div>
+    <div class="card" style="max-width:320px;margin:0 auto">
+      <label class="opt" id="ao-none" onclick="setAddon(0,'無','無',this)">
+        <div class="rc"><div class="rd"></div></div>
+        <div class="opt-t">無</div>
+      </label>
+      <label class="opt" id="ao-sde" onclick="setAddon(8000,'SDE快剪快播','SDE快剪快播 8,000元',this)">
+        <div class="rc"><div class="rd"></div></div>
+        <div class="opt-t">SDE 快剪快播</div>
+        <div class="opt-p">8,000</div>
+      </label>
+      <label class="opt" id="ao-r1" onclick="setAddon(2000,'REELS×1','REELS 30秒×1支 2,000元',this)">
+        <div class="rc"><div class="rd"></div></div>
+        <div class="opt-t" style="font-size:13px">REELS 30秒客訂短影音 1支</div>
+        <div class="opt-p">2,000</div>
+      </label>
+      <label class="opt" id="ao-r2" onclick="setAddon(4000,'REELS×2','REELS 30秒×2支 4,000元',this)">
+        <div class="rc"><div class="rd"></div></div>
+        <div class="opt-t" style="font-size:13px">REELS 30秒客訂短影音 2支</div>
+        <div class="opt-p">4,000</div>
+      </label>
+    </div>
+
+    <!-- 指定攝影師 side by side -->
+    <div class="g2" id="sec-persons" style="margin-top:20px">
+      <!-- 動態錄影師 -->
+      <div id="sec-vp">
+        <div class="col-h" style="margin-bottom:8px">
+          <div class="col-h-zh" style="font-size:13px">指定動態錄影師</div>
+        </div>
+        <div class="pcard">
+          <label class="popt" id="vp-none" onclick="setVP(0,'無選動態錄影','',this)">
+            <div class="src" style="width:17px;height:17px;border-radius:50%;border:1.5px solid rgba(255,255,255,.5);flex-shrink:0;display:flex;align-items:center;justify-content:center;"><div class="srd"></div></div>
+            <div class="pinfo"><div class="pname" style="font-size:12px">0元 — 無選</div></div>
+          </label>
+          <label class="popt" id="vp-any" onclick="setVP(0,'不指定（輪班）','不指定',this)">
+            <div class="src" style="width:17px;height:17px;border-radius:50%;border:1.5px solid rgba(255,255,255,.5);flex-shrink:0;display:flex;align-items:center;justify-content:center;"><div class="srd"></div></div>
+            <div class="pinfo"><div class="pname" style="font-size:12px">0元 — 不指定</div></div>
+          </label>
+          <label class="popt" id="vp-le" onclick="setVP(3000,'阿樂','阿樂（主理人）+3,000',this)">
+            <div class="avatar" style="width:32px;height:32px;font-size:11px">樂</div>
+            <div class="pinfo">
+              <div class="pname" style="font-size:12px">阿樂</div>
+              <div class="prole">主理人 3,000元</div>
+            </div>
+          </label>
+          <label class="popt" id="vp-jb" onclick="setVP(1000,'加冰','加冰 +1,000',this)">
+            <div class="avatar" style="width:32px;height:32px;font-size:11px">冰</div>
+            <div class="pinfo">
+              <div class="pname" style="font-size:12px">加冰</div>
+              <div class="prole">動態平面老師 1,000元</div>
+            </div>
+          </label>
+          <label class="popt" id="vp-jarvis" onclick="setVP(1000,'JARVIS','JARVIS +1,000',this)">
+            <div class="avatar" style="width:32px;height:32px;font-size:11px">J</div>
+            <div class="pinfo">
+              <div class="pname" style="font-size:12px">JARVIS</div>
+              <div class="prole">動態老師 1,000元</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- 平面攝影師 -->
+      <div id="sec-pp">
+        <div class="col-h" style="margin-bottom:8px">
+          <div class="col-h-zh" style="font-size:13px">指定平面攝影師</div>
+        </div>
+        <div class="pcard">
+          <label class="popt" id="pp-none" onclick="setPP(0,'無選平面攝影','',this)">
+            <div class="src" style="width:17px;height:17px;border-radius:50%;border:1.5px solid rgba(255,255,255,.5);flex-shrink:0;display:flex;align-items:center;justify-content:center;"><div class="srd"></div></div>
+            <div class="pinfo"><div class="pname" style="font-size:12px">0元 — 無選</div></div>
+          </label>
+          <label class="popt" id="pp-any" onclick="setPP(0,'不指定（輪班）','不指定',this)">
+            <div class="src" style="width:17px;height:17px;border-radius:50%;border:1.5px solid rgba(255,255,255,.5);flex-shrink:0;display:flex;align-items:center;justify-content:center;"><div class="srd"></div></div>
+            <div class="pinfo"><div class="pname" style="font-size:12px">0元 — 不指定</div></div>
+          </label>
+          <label class="popt" id="pp-le" onclick="setPP(3000,'阿樂','阿樂（主理人）+3,000',this)">
+            <div class="avatar" style="width:32px;height:32px;font-size:11px">樂</div>
+            <div class="pinfo">
+              <div class="pname" style="font-size:12px">阿樂</div>
+              <div class="prole">主理人 3,000元</div>
+            </div>
+          </label>
+          <label class="popt" id="pp-ryan" onclick="setPP(1000,'Ryan','Ryan +1,000',this)">
+            <div class="avatar" style="width:32px;height:32px;font-size:11px">R</div>
+            <div class="pinfo">
+              <div class="pname" style="font-size:12px">Ryan</div>
+              <div class="prole">婚紗平面老師 1,000元</div>
+            </div>
+          </label>
+          <label class="popt" id="pp-zhh" onclick="setPP(1000,'智皓','智皓 +1,000',this)">
+            <div class="avatar" style="width:32px;height:32px;font-size:11px">皓</div>
+            <div class="pinfo">
+              <div class="pname" style="font-size:12px">智皓</div>
+              <div class="prole">婚紗平面老師 1,000元</div>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="note">如勾選不指定，則輪班安排老師檔期</div>
+    <div class="sp"></div>
+  </div>
+
+  <!-- ===== PAGE 3 ===== -->
+  <div class="page" id="p3">
+    <div class="pnum">03</div>
+
+    <div class="fg">
+      <div class="flbl"><span class="req-dot"></span>先生姓名（必填）</div>
+      <input class="tinput" type="text" placeholder="請輸入" oninput="st.groom=this.value;sync()">
+    </div>
+    <div class="fg">
+      <div class="flbl"><span class="req-dot"></span>太太姓名（必填）</div>
+      <input class="tinput" type="text" placeholder="請輸入" oninput="st.bride=this.value;sync()">
+    </div>
+    <div class="fg">
+      <div class="flbl"><span class="req-dot"></span>手機號碼（必填）</div>
+      <input class="tinput" type="tel" placeholder="0912-345-678" oninput="st.phone=this.value;sync()">
+    </div>
+
+    <div class="fg">
+      <div class="flbl">宴客時間（必填）</div>
+      <div class="card">
+        <label class="opt" id="wt-lunch" onclick="setWT('lunch',this)">
+          <div class="rc"><div class="rd"></div></div>
+          <div class="opt-t">午宴</div>
+        </label>
+        <label class="opt" id="wt-dinner" onclick="setWT('dinner',this)">
+          <div class="rc"><div class="rd"></div></div>
+          <div class="opt-t">晚宴</div>
+        </label>
+      </div>
+    </div>
+
+    <div class="fg">
+      <div class="flbl">餐廳地址（必填）</div>
+      <input class="tinput" type="text" placeholder="請輸入餐廳地址" oninput="st.restaurant=this.value;sync()">
+    </div>
+
+    <div class="fg">
+      <div class="flbl">飯店地址</div>
+      <div class="chips" id="hotel-chips">
+        <div class="chip sel" onclick="setHotel('none',this)">無</div>
+        <div class="chip" onclick="setHotel('addr',this)">填地址</div>
+      </div>
+      <input class="tinput hidden" id="hotel-input" type="text" placeholder="飯店地址" oninput="st.hotel=this.value;sync()">
+    </div>
+
+    <div class="fg">
+      <div class="flbl">文定儀式地址</div>
+      <div class="chips" id="wz-chips">
+        <div class="chip sel" onclick="setCer('wz','none',this)">無</div>
+        <div class="chip" onclick="setCer('wz','hotel',this)">同飯店</div>
+        <div class="chip" onclick="setCer('wz','rest',this)">同餐廳</div>
+        <div class="chip" onclick="setCer('wz','addr',this)">填地址</div>
+      </div>
+      <input class="tinput hidden" id="wz-input" type="text" placeholder="文定儀式地址" oninput="sync()">
+    </div>
+
+    <div class="fg">
+      <div class="flbl">迎娶儀式地址</div>
+      <div class="chips" id="yq-chips">
+        <div class="chip sel" onclick="setCer('yq','none',this)">無</div>
+        <div class="chip" onclick="setCer('yq','hotel',this)">同飯店</div>
+        <div class="chip" onclick="setCer('yq','rest',this)">同餐廳</div>
+        <div class="chip" onclick="setCer('yq','addr',this)">填地址</div>
+      </div>
+      <input class="tinput hidden" id="yq-input" type="text" placeholder="迎娶儀式地址" oninput="sync()">
+    </div>
+
+    <div class="fg">
+      <div class="flbl">證婚儀式地址</div>
+      <div class="chips" id="zh-chips">
+        <div class="chip sel" onclick="setCer('zh','none',this)">無</div>
+        <div class="chip" onclick="setCer('zh','hotel',this)">同飯店</div>
+        <div class="chip" onclick="setCer('zh','rest',this)">同餐廳</div>
+        <div class="chip" onclick="setCer('zh','addr',this)">填地址</div>
+      </div>
+      <input class="tinput hidden" id="zh-input" type="text" placeholder="證婚儀式地址" oninput="sync()">
+    </div>
+
+    <div class="fg">
+      <div class="flbl">新秘老師開妝時間</div>
+      <input class="tinput" type="text" placeholder="如：07:00" oninput="st.makeup=this.value;sync()">
+    </div>
+
+    <div class="fg">
+      <div class="flbl">費用明細</div>
+      <div class="card" id="summary3"></div>
+      <div class="total-bar"><div class="total-lbl">合計</div><div class="total-amt" id="t3-amt">0 元</div></div>
+    </div>
+    <div class="sp"></div>
+  </div>
+
+  <!-- ===== PAGE 4 ===== -->
+  <div class="page" id="p4">
+    <div class="pnum">04</div>
+
+    <div class="fg" style="margin-bottom:6px">
+      <div class="flbl">客戶確認</div>
+      <div class="card">
+        <div class="sitem"><div class="slbl">先生姓名</div><div class="sval" id="r-groom">—</div></div>
+        <div class="sitem"><div class="slbl">太太姓名</div><div class="sval" id="r-bride">—</div></div>
+        <div class="sitem"><div class="slbl">手機號碼</div><div class="sval" id="r-phone">—</div></div>
+      </div>
+    </div>
+
+    <div class="fg" style="margin-top:14px">
+      <div class="flbl">費用明細</div>
+      <div class="card" id="summary4"></div>
+      <div class="total-bar"><div class="total-lbl">合計</div><div class="total-amt" id="t4-amt">0 元</div></div>
+    </div>
+
+    <div class="fg" style="margin-top:14px">
+      <div class="flbl">攝影服務契約</div>
+      <div class="contract" id="contract-body">
+        <div class="ct-title">攝 影 服 務 契 約（婚 禮 適 用）</div>
+        <div class="ct-sub">統一編號：45286851</div>
+
+        <div class="ct-sec">
+          <b>1.</b> 雙方於簽立本契約時，甲方應給付乙方 <b>3,000元</b>，做為訂金。<br>
+          <b>2.</b> 其餘尾款（<span class="ct-fill" id="ct-balance">—</span> 元）部分，甲方應於乙方拍攝工作結束時給付乙方，當日拍攝毛片檔案上傳雲端提供給甲方下載留存。<br>
+          <b>3-1.</b> 乙方為進行拍攝工作所支出之住宿費、道具製作費、場地租借費等費用（此合約免使用場地住宿）。<br>
+          <b>3-2.</b> 乙方於拍攝完畢後，需要九~十週進行剪輯作業，若甲方要求於拍攝隔週或指定時間取件，乙方得加收 3,000 元趕工費。<br>
+          <b>3-3.</b> 乙方就其拍攝之內容會以電子檔 1080 HD 高畫質隨身碟交予甲方。<br>
+          <b>3-4.</b> 乙方將成品交付甲方後，若甲方要求重新修改剪輯者，可提供 2 次修改，第 3 次起酌收 3,000 元（適用於動態攝影）。<br>
+          <b>3-5.</b> 影片（隨身碟）交到客戶手中七日內若無瑕疵、損壞、不能播放等問題，將一概不負責。
+        </div>
+
+        <div class="ct-sec">
+          <b>4. 契約之解除</b><br>
+          <b>4-1.</b> 乙方若非不可抗力因素無法履行合約，若無法履行則賠償甲方拍攝總費用 ×1.5 倍。<br>
+          <b>4-2.</b> 甲方若因不可抗力因素無法履行合約，甲方須提出書面或相關證明，乙方則需退還訂金。<br>
+          <b>4-3.</b> 若甲方非不可抗力因素於拍攝日前一天無故取消，甲方須賠償乙方總費用 30% 做為檔期損失。<br>
+          <b>4-4.</b> 當日拍攝檔案完全損毀導致甲方無紀錄影片，乙方須退還總價 + 總價 50%。<br>
+          <b>5-1.</b> 本契約未盡之事宜，依中華民國之法律補充之。<br>
+          <b>5-2.</b> 若因本契約發生爭議，雙方約定以台灣彰化地方法院為第一審之管轄法院。<br>
+          <b>6-1.</b> 本契約由乙方電子回簽，由甲、乙雙方各執乙份為憑。
+        </div>
+
+        <div class="ct-sec" id="ct-video-svc" style="display:none">
+          <b>動態錄影服務內容</b><br>
+          1. 錄影 MV 4–6 min — 微電影式唯美告白風格，搭配音樂及攝影師轉場運鏡整體感覺。<br>
+          2. 完成品 40–50 min 剪輯版 — 從早上化妝、訂婚奉茶、迎娶闖關拜別到宴客進場敬酒送客全紀錄，加上現場音效及背景音樂。
+        </div>
+
+        <div class="ct-sec" id="ct-photo-svc" style="display:none">
+          <b>平面拍攝服務內容</b><br>
+          1. 使用軟件：PHASE ONE、Photoshop、PIX CAKE<br>
+          2. 儀式、證婚、婚宴等視活動內容畫面捕捉，可安排時間拍攝類婚紗。<br>
+          3. 精選 400–700 張 JPG（調色、濾鏡、曝光、飽和等調整）。<br>
+          4. 照片修圖工作天 6–8 週。<br>
+          5. 紀念隨身碟 1 枚，7-11 店到店取件。
+        </div>
+
+        <div class="ct-sec party">
+          <b>立契約人</b><br>
+          甲方：<span class="ct-fill" id="ct-name">—</span><br>
+          電話：<span class="ct-fill" id="ct-phone">—</span><br>
+          地址：（免填）<br><br>
+          乙方：鄭莛楷（阿樂）<br>
+          地址：彰化縣員林市員林大道四段 175 號<br>
+          統一編號：45286851　負責人：黃雯埼<br>
+          匯款：國泰世華 013　帳號 023506185891<br>
+          訂金 3,000 元（匯款請備註中文姓名）
+        </div>
+
+        <div class="ct-sec" style="font-size:10.5px;color:rgba(255,255,255,.4)">
+          主機：SONY FX3 Cinema Line × 2　全紀錄：Sony A74 × 2　輔助：DJI Osmo POCKET3 / INSTA360<br>
+          平面：Sony A7M4　空拍：DJI mini Pro4 / mini3（視空航法規）<br>
+          穩定：DJI RS4 pro / RS3 pro / RS3 mini　收音：HOLLYLAND / RODE / Sony ECM-b10<br>
+          剪輯：Premiere / Audition　修圖：Phase One / Photoshop / Pic Cake<br>
+          <span style="opacity:.6">※ 原 LE YING IMAGE（樂映影像）於 114/04/01 起更名為 M 視覺 Vision</span>
+        </div>
+
+        <div class="ct-sig">
+          甲方簽署日期：
+          <input class="sig-input y" type="number" placeholder="____" id="sig-year" oninput="st.year=this.value">
+          年
+          <input class="sig-input md" type="number" placeholder="__" oninput="st.month=this.value">
+          月
+          <input class="sig-input md" type="number" placeholder="__" oninput="st.day=this.value">
+          日
+        </div>
+      </div>
+    </div>
+
+    <div class="fg" style="margin-top:12px">
+      <div class="flbl">甲 方 簽 名</div>
+      <canvas id="sig-canvas" style="width:100%;height:160px;display:block;background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.18);border-radius:14px;touch-action:none;cursor:crosshair"></canvas>
+      <div style="display:flex;justify-content:flex-end;margin-top:6px">
+        <button class="sig-clear" onclick="clearSig()">清除重簽</button>
+      </div>
+    </div>
+    <div class="sp"></div>
+  </div>
+
+  </div><!-- /pages -->
+
+  <!-- Bottom Nav -->
+  <div class="bnav">
+    <button class="btn-nav hidden" id="btn-back" onclick="goBack()">上一頁</button>
+    <div></div>
+    <button class="btn-nav primary" id="btn-next" onclick="goNext()">下一頁</button>
+  </div>
+</div>
+
+<script>
+// ===== Stars Canvas =====
+(function(){
+  const c=document.getElementById('stars');
+  const ctx=c.getContext('2d');
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight}
+  resize();
+  window.addEventListener('resize',()=>{resize();draw()});
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    const seed=42;
+    function rnd(n){let x=Math.sin(n+seed)*10000;return x-Math.floor(x)}
+    for(let i=0;i<200;i++){
+      const x=rnd(i*3)*c.width;
+      const y=rnd(i*3+1)*c.height;
+      const r=rnd(i*3+2)*1.2+0.2;
+      const a=rnd(i*3+0.5)*0.5+0.1;
+      ctx.beginPath();
+      ctx.arc(x,y,r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(255,255,255,${a})`;
+      ctx.fill();
+    }
+  }
+  draw();
+})();
+
+// ===== State =====
+const st={
+  year:'2026',month:'',day:'',
+  svc:'',
+  vmTime:'',pmTime:'',
+  vcAdd:0,vcLbl:'',pcAdd:0,pcLbl:'',
+  vcerAdd:0,vcerLbl:'',pcerAdd:0,pcerLbl:'',
+  addonAdd:0,addonFull:'無',
+  vpAdd:0,vpFull:'',ppAdd:0,ppFull:'',
+  groom:'',bride:'',phone:'',
+  makeup:'',restaurant:'',
+  get videoBase(){return this.svc==='photo'?0:22000},
+  get photoBase(){return this.svc==='video'?0:16000},
+  get total(){return this.videoBase+this.photoBase+this.vcAdd+this.pcAdd+this.vcerAdd+this.pcerAdd+this.addonAdd+this.vpAdd+this.ppAdd}
+};
+let cur=1;
+
+// ===== Setters =====
+function setSvc(v,el){
+  st.svc=v;
+  selInParent(el);
+  const isV=v==='video'||v==='both';
+  const isP=v==='photo'||v==='both';
+  tog('sec-video',isV);tog('sec-photo',isP);
+  // show/hide cam columns
+  tog('vc-wrap',isV);tog('pc-wrap',isP);
+  tog('cam-lbl-v',isV);tog('cam-lbl-p',isP);
+  tog('vcer-wrap',isV);tog('pcer-wrap',isP);
+  tog('cer-lbl-v',isV);tog('cer-lbl-p',isP);
+  tog('sec-cam',isV||isP);tog('sec-cer',isV||isP);
+  // p2
+  tog('sec-vp',isV);tog('sec-pp',isP);
+  // push photo-only columns to right side
+  const onlyP=isP&&!isV;
+  tcls('sec-photo','col-right',onlyP);
+  tcls('cam-lbl-p','col-right',onlyP);
+  tcls('pc-wrap','col-right',onlyP);
+  tcls('cer-lbl-p','col-right',onlyP);
+  tcls('pcer-wrap','col-right',onlyP);
+  tcls('sec-pp','col-right',onlyP);
+  sync();
+}
+function setVM(v,el){st.vmTime=v;selInParent(el);sync()}
+function setPM(v,el){st.pmTime=v;selInParent(el);sync()}
+function setVC(k,a,l,el){st.vcAdd=a;st.vcLbl=l;selInParent(el);sync()}
+function setPC(k,a,l,el){st.pcAdd=a;st.pcLbl=l;selInParent(el);sync()}
+function setVCer(a,l,el){st.vcerAdd=a;st.vcerLbl=l;selInParent(el);sync()}
+function setPCer(a,l,el){st.pcerAdd=a;st.pcerLbl=l;selInParent(el);sync()}
+function setAddon(a,l,f,el){st.addonAdd=a;st.addonFull=f;selInParent(el);sync()}
+function setVP(a,l,f,el){st.vpAdd=a;st.vpFull=f;selInGroup('vp',el);sync()}
+function setPP(a,l,f,el){st.ppAdd=a;st.ppFull=f;selInGroup('pp',el);sync()}
+function setWT(v,el){selInParent(el);sync()}
+function setHotel(type,el){
+  [...document.getElementById('hotel-chips').children].forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  tog('hotel-input',type==='addr');sync();
+}
+function setCer(key,type,el){
+  [...document.getElementById(key+'-chips').children].forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  tog(key+'-input',type==='addr');sync();
+}
+
+// ===== Helpers =====
+function q(id){return document.getElementById(id)}
+function tog(id,show){const el=q(id);if(el)el.classList.toggle('hidden',!show)}
+function tcls(id,cls,on){const el=q(id);if(el)el.classList.toggle(cls,on)}
+function selInParent(el){
+  [...el.parentElement.children].forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+}
+function selInGroup(prefix,el){
+  document.querySelectorAll('[id^="'+prefix+'"]').forEach(e=>e.classList.remove('sel'));
+  el.classList.add('sel');
+}
+function fmt(n){return n.toLocaleString('zh-TW')+' 元'}
+
+// ===== Sync =====
+function sync(){
+  const rows=buildRows();
+  renderSummary('summary3',rows);
+  renderSummary('summary4',rows.filter(r=>r.amt===null||r.amt>0));
+  const t=fmt(st.total);
+  q('t3-amt').textContent=t;
+  q('t4-amt').textContent=t;
+  q('r-groom').textContent=st.groom||'—';
+  q('r-bride').textContent=st.bride||'—';
+  q('r-phone').textContent=st.phone||'—';
+  // contract auto-fill
+  const names=[st.groom,st.bride].filter(Boolean).join(' & ');
+  q('ct-name').textContent=names||'—';
+  q('ct-phone').textContent=st.phone||'—';
+  const bal=st.total>0?st.total-3000:0;
+  q('ct-balance').textContent=bal>0?bal.toLocaleString('zh-TW'):'尚未計算';
+  const isV=st.svc==='video'||st.svc==='both';
+  const isP=st.svc==='photo'||st.svc==='both';
+  if(q('ct-video-svc'))q('ct-video-svc').style.display=isV?'':'none';
+  if(q('ct-photo-svc'))q('ct-photo-svc').style.display=isP?'':'none';
+}
+function buildRows(){
+  const isV=st.svc==='video'||st.svc==='both';
+  const isP=st.svc==='photo'||st.svc==='both';
+  const date=st.year&&st.month&&st.day?`${st.year}年${st.month}月${st.day}日`:'—';
+  const svcMap={video:'動態錄影',photo:'平面拍照',both:'動態＋平面','':`—`};
+  const rows=[{n:1,lbl:'婚宴日期',val:date,amt:null},{n:2,lbl:'服務選項',val:svcMap[st.svc],amt:null}];
+  let n=3;
+  if(isV){
+    rows.push({n:n++,lbl:'錄影選項',val:st.vmTime?({lunch:'午宴',dinner:'晚宴'}[st.vmTime]+' 22,000元'):'—',amt:st.vmTime?22000:0});
+    rows.push({n:n++,lbl:'錄影機位',val:st.vcLbl||'—',amt:st.vcAdd});
+    rows.push({n:n++,lbl:'錄影儀式',val:st.vcerLbl||'—',amt:st.vcerAdd});
+  }
+  if(isP){
+    rows.push({n:n++,lbl:'拍照選項',val:st.pmTime?({lunch:'午宴',dinner:'晚宴'}[st.pmTime]+' 16,000元'):'—',amt:st.pmTime?16000:0});
+    rows.push({n:n++,lbl:'拍照機位',val:st.pcLbl||'—',amt:st.pcAdd});
+    rows.push({n:n++,lbl:'拍照儀式',val:st.pcerLbl||'—',amt:st.pcerAdd});
+  }
+  rows.push({n:n++,lbl:'加選項目',val:st.addonFull||'無',amt:st.addonAdd});
+  if(isV) rows.push({n:n++,lbl:'指定錄影',val:st.vpFull||'—',amt:st.vpAdd});
+  if(isP) rows.push({n:n++,lbl:'指定攝影',val:st.ppFull||'—',amt:st.ppAdd});
+  return rows;
+}
+function renderSummary(id,rows){
+  q(id).innerHTML=rows.map(r=>`<div class="sitem"><div class="snum">${r.n}</div><div class="slbl">${r.lbl}</div><div class="sval">${r.amt!=null?fmt(r.amt):r.val}</div></div>`).join('');
+}
+
+// ===== Navigation =====
+function goNext(){
+  if(cur>=4){showDone();return;}
+  nav(cur,cur+1,false);
+}
+function resetForm(){
+  // Reset state
+  Object.assign(st,{year:'2026',month:'',day:'',svc:'',vmTime:'',pmTime:'',
+    vcAdd:0,vcLbl:'',pcAdd:0,pcLbl:'',vcerAdd:0,vcerLbl:'',pcerAdd:0,pcerLbl:'',
+    addonAdd:0,addonFull:'無',vpAdd:0,vpFull:'',ppAdd:0,ppFull:'',
+    groom:'',bride:'',phone:'',makeup:'',restaurant:''});
+  // Clear all inputs
+  document.querySelectorAll('input.tinput,input.dinput').forEach(el=>{el.value=''});
+  const yr=q('year');if(yr)yr.value='2026';
+  const sigY=q('sig-year');if(sigY)sigY.value='2026';
+  // Clear signature canvas
+  clearSig();
+  // Remove all sel classes
+  document.querySelectorAll('.sel').forEach(el=>el.classList.remove('sel'));
+  // Re-init
+  init();
+  // Go to page 1
+  const old=q('p'+cur);if(old){old.classList.remove('active','out','back-in');}
+  cur=1;q('p1').classList.add('active');
+  updateNav();updateDots();window.scrollTo(0,0);
+}
+function showDone(){
+  const m=document.createElement('div');
+  m.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);backdrop-filter:blur(6px)';
+  m.innerHTML=`<div style="background:rgba(20,15,50,.95);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:32px 28px;text-align:center;max-width:300px;width:80%">
+    <div style="font-size:36px;margin-bottom:12px">✅</div>
+    <div style="font-size:18px;color:#fff;font-weight:600;letter-spacing:.1em;margin-bottom:8px">預約完成</div>
+    <div style="font-size:13px;color:rgba(255,255,255,.5);line-height:1.7;margin-bottom:22px">感謝您的選擇<br>M 視覺影像記錄公司<br>將盡快與您聯繫確認</div>
+    <button onclick="this.closest('[style*=fixed]').remove();resetForm()" style="width:100%;padding:12px;border-radius:12px;border:none;background:rgba(120,100,220,.6);color:#fff;font-size:14px;cursor:pointer;font-family:inherit;letter-spacing:.08em">確 認</button>
+  </div>`;
+  document.body.appendChild(m);
+}
+function goBack(){if(cur<=1)return;nav(cur,cur-1,true)}
+function nav(from,to,isBack){
+  const pF=q('p'+from),pT=q('p'+to);
+  pF.classList.add('out');
+  setTimeout(()=>{
+    pF.classList.remove('active','out');
+    if(isBack){
+      pT.classList.add('back-in');
+      setTimeout(()=>{pT.classList.remove('back-in');pT.classList.add('active');},400);
+    } else {
+      pT.classList.add('active');
+    }
+    cur=to;updateNav();updateDots();window.scrollTo(0,0);
+    if(to>=3)sync();
+  },220);
+}
+function updateNav(){
+  const bb=q('btn-back'),bn=q('btn-next');
+  bb.classList.toggle('hidden',cur===1);
+  bn.textContent=cur===4?'完 成':'下一頁';
+}
+function updateDots(){
+  for(let i=1;i<=4;i++){
+    const d=q('d'+i);
+    d.className='dot'+(i<cur?' done':i===cur?' active':'');
+  }
+}
+
+// ===== Init =====
+function init(){
+  tog('sec-video',false);tog('sec-photo',false);
+  tog('sec-cam',false);tog('sec-cer',false);
+  tog('hotel-input',false);tog('wz-input',false);
+  tog('yq-input',false);tog('zh-input',false);
+  q('ao-none').classList.add('sel');
+  const sigY=q('sig-year');if(sigY)sigY.value='2026';
+  sync();
+}
+init();
+
+// ===== Signature Pad =====
+(function(){
+  const canvas=document.getElementById('sig-canvas');
+  const ctx=canvas.getContext('2d');
+  function resize(){
+    const r=canvas.getBoundingClientRect();
+    const dpr=window.devicePixelRatio||1;
+    canvas.width=r.width*dpr;
+    canvas.height=r.height*dpr;
+    ctx.scale(dpr,dpr);
+    ctx.strokeStyle='rgba(200,190,255,0.9)';
+    ctx.lineWidth=2;
+    ctx.lineCap='round';
+    ctx.lineJoin='round';
+  }
+  resize();
+  let drawing=false;
+  function pos(e){
+    const r=canvas.getBoundingClientRect();
+    const t=e.touches?e.touches[0]:e;
+    return{x:t.clientX-r.left,y:t.clientY-r.top};
+  }
+  canvas.addEventListener('mousedown',e=>{drawing=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y)});
+  canvas.addEventListener('mousemove',e=>{if(!drawing)return;const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke()});
+  canvas.addEventListener('mouseup',()=>drawing=false);
+  canvas.addEventListener('mouseleave',()=>drawing=false);
+  canvas.addEventListener('touchstart',e=>{e.preventDefault();drawing=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y)},{passive:false});
+  canvas.addEventListener('touchmove',e=>{e.preventDefault();if(!drawing)return;const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke()},{passive:false});
+  canvas.addEventListener('touchend',()=>drawing=false);
+  window.clearSig=function(){resize()};
+})();
+</script>
+</body>
+</html>
