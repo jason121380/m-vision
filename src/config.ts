@@ -34,4 +34,5 @@ export const CONFIG_SHEET_CSV_URLS = {
 
 export type ConfigKey = keyof typeof CONFIG_SHEET_CSV_URLS;
 
-export const SUBMISSION_ENDPOINT_URL = '';
+export const SUBMISSION_ENDPOINT_URL =
+  'https://script.google.com/macros/s/AKfycbwLQeC7F5Ke5LhDgyrMVgnJjpQ0FPHO3FhZuCp3DI5NN9848_0A14Z-1gAV0wi8OSI/exec';
