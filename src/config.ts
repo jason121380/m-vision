@@ -18,13 +18,18 @@
 //
 // =============================================================================
 
+const CSV_BASE =
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vTFQckgyvf1EHhsOPeI8X1SPsaqQTert9W53cOfeTHy3TkGseK1bfzI4jn7euXKS5CGlgYxJ18Ml2I-/pub';
+
+const csv = (gid: string) => `${CSV_BASE}?gid=${gid}&single=true&output=csv`;
+
 export const CONFIG_SHEET_CSV_URLS = {
-  services: '',
-  cameras: '',
-  ceremonies: '',
-  addons: '',
-  photographers: '',
-  settings: '',
+  services: csv('0'),
+  cameras: csv('799839686'),
+  ceremonies: csv('1996073086'),
+  addons: csv('839307070'),
+  photographers: csv('641524689'),
+  settings: csv('382208128'),
 } as const;
 
 export type ConfigKey = keyof typeof CONFIG_SHEET_CSV_URLS;
