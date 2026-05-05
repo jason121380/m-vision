@@ -6,17 +6,30 @@ import { Page1 } from './components/Page1';
 import { Page2 } from './components/Page2';
 import { Page3 } from './components/Page3';
 import { Page4 } from './components/Page4';
+import { PrintableContract } from './components/PrintableContract';
 import { useConfig } from './hooks/useConfig';
 import { initialState, type FormState } from './types';
 import { submitToSheet } from './lib/submission';
+import type { PdfResult } from './lib/pdf';
+
+function triggerBlobDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
 
 const TOTAL_PAGES = 4;
 
 type ModalState =
   | { type: 'none' }
   | { type: 'submitting' }
-  | { type: 'success' }
-  | { type: 'error'; message: string };
+  | { type: 'success'; pdf?: PdfResult }
+  | { type: 'error'; message: string; pdf?: PdfResult };
 
 export function App() {
   const { config, loaded } = useConfig();
@@ -44,9 +57,9 @@ export function App() {
     setModal({ type: 'submitting' });
     const res = await submitToSheet(state, config);
     if (res.ok) {
-      setModal({ type: 'success' });
+      setModal({ type: 'success', pdf: res.pdf });
     } else {
-      setModal({ type: 'error', message: res.error ?? '提交失敗' });
+      setModal({ type: 'error', message: res.error ?? '提交失敗', pdf: res.pdf });
     }
   }, [page, state, config]);
 
@@ -56,6 +69,12 @@ export function App() {
       window.scrollTo(0, 0);
     }
   }, [page]);
+
+  const onDownload = useCallback(() => {
+    if (modal.type !== 'success' && modal.type !== 'error') return;
+    if (!modal.pdf) return;
+    triggerBlobDownload(modal.pdf.blob, modal.pdf.filename);
+  }, [modal]);
 
   if (!loaded) {
     return (
@@ -95,6 +114,8 @@ export function App() {
         </div>
       </div>
 
+      <PrintableContract state={state} config={config} />
+
       {modal.type === 'success' && (
         <div className="modal">
           <div className="modal-box">
@@ -107,6 +128,15 @@ export function App() {
               <br />
               將盡快與您聯繫確認
             </div>
+            {modal.pdf && (
+              <button
+                className="modal-btn"
+                onClick={onDownload}
+                style={{ marginBottom: 8, background: 'rgba(255,255,255,.12)' }}
+              >
+                下載契約 PDF
+              </button>
+            )}
             <button className="modal-btn" onClick={reset}>
               確 認
             </button>
