@@ -17,7 +17,7 @@ export function buildPdfFilename(state: FormState): string {
     state.year && state.month && state.day
       ? `${state.year}${state.month.padStart(2, '0')}${state.day.padStart(2, '0')}`
       : new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  return `M視覺_契約_${groom}_${bride}_${date}.pdf`;
+  return `${groom}_${bride}_${date}.pdf`;
 }
 
 export async function generateContractPdf(state: FormState): Promise<PdfResult> {
