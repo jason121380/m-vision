@@ -22,6 +22,22 @@ export function Page1({ state, update, config }: Props) {
   const videoPrice = config.services.find((s) => s.key === 'video')?.price ?? 0;
   const photoPrice = config.services.find((s) => s.key === 'photo')?.price ?? 0;
 
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 6 }, (_, i) => currentYear + i);
+  const months = Array.from({ length: 12 }, (_, i) => i + 1);
+  const yearNum = Number(state.year) || currentYear;
+  const monthNum = Number(state.month) || 0;
+  const daysInMonth = monthNum > 0 ? new Date(yearNum, monthNum, 0).getDate() : 31;
+  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+  // 月份變化時，把超出當月日數的「日」清掉
+  const onMonthChange = (m: string) => {
+    const newMonthNum = Number(m) || 0;
+    const newDays = newMonthNum > 0 ? new Date(yearNum, newMonthNum, 0).getDate() : 31;
+    const dNum = Number(state.day) || 0;
+    update({ month: m, day: dNum > newDays ? '' : state.day });
+  };
+
   return (
     <div className="page active">
       <div className="pnum">01</div>
@@ -33,37 +49,42 @@ export function Page1({ state, update, config }: Props) {
       <div className="date-row">
         <div>
           <label className="dlbl">年</label>
-          <input
-            className="dinput"
-            type="number"
+          <select
+            className="dinput dinput-select"
             value={state.year}
-            placeholder="年份"
             onChange={(e) => update({ year: e.target.value })}
-          />
+          >
+            <option value="">年份</option>
+            {years.map((y) => (
+              <option key={y} value={String(y)}>{y}</option>
+            ))}
+          </select>
         </div>
         <div>
           <label className="dlbl">月</label>
-          <input
-            className="dinput"
-            type="number"
+          <select
+            className="dinput dinput-select"
             value={state.month}
-            placeholder="月"
-            min={1}
-            max={12}
-            onChange={(e) => update({ month: e.target.value })}
-          />
+            onChange={(e) => onMonthChange(e.target.value)}
+          >
+            <option value="">月</option>
+            {months.map((m) => (
+              <option key={m} value={String(m)}>{m}</option>
+            ))}
+          </select>
         </div>
         <div>
           <label className="dlbl">日</label>
-          <input
-            className="dinput"
-            type="number"
+          <select
+            className="dinput dinput-select"
             value={state.day}
-            placeholder="日"
-            min={1}
-            max={31}
             onChange={(e) => update({ day: e.target.value })}
-          />
+          >
+            <option value="">日</option>
+            {days.map((d) => (
+              <option key={d} value={String(d)}>{d}</option>
+            ))}
+          </select>
         </div>
       </div>
 

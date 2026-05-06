@@ -80,6 +80,9 @@ html{scroll-padding-top:80px}
   text-align:center;outline:none;transition:border-color .2s;-webkit-appearance:none}
 .dinput:focus{border-color:#6e5ac8}
 .dinput::placeholder{color:rgba(0,0,0,.25)}
+.dinput-select{appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%23666' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat:no-repeat;background-position:right 10px center;padding-right:24px;cursor:pointer}
 
 .tinput{width:100%;background:#fff;border:1.5px solid rgba(0,0,0,.12);
   border-radius:12px;padding:13px 15px;font-size:15px;color:#1a1a1a;font-family:inherit;
