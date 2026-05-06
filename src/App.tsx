@@ -62,18 +62,13 @@ function openPdfDriveUrl(driveUrl: string) {
 
 function openPdfBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
-  const w = window.open(url, '_blank');
-  if (!w) {
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.target = '_blank';
-    a.rel = 'noopener';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }
-  setTimeout(() => URL.revokeObjectURL(url), 5 * 60_000);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 export function App() {
@@ -119,24 +114,36 @@ export function App() {
   }, [page]);
 
   useEffect(() => {
-    // rAF 確保 page 切換 + DOM 重繪完才 scroll；多管齊下涵蓋不同瀏覽器
-    const id = requestAnimationFrame(() => {
+    // 釋放被 focus 的 input（避免 iOS 鍵盤把 scroll 拉回來）
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    const doScroll = () => {
       window.scrollTo(0, 0);
       if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
       document.documentElement.scrollTop = 0;
       document.body.scrollTop = 0;
-    });
-    return () => cancelAnimationFrame(id);
+    };
+    doScroll();
+    // 多次嘗試覆蓋：rAF 後、動畫中、動畫結束後
+    const raf = requestAnimationFrame(doScroll);
+    const t1 = window.setTimeout(doScroll, 100);
+    const t2 = window.setTimeout(doScroll, 450);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
   }, [page]);
 
   const onOpenPdf = useCallback(() => {
     if (modal.type !== 'success' && modal.type !== 'error') return;
-    // 優先用 Drive URL（LINE 內部用 openExternalBrowser=1 會跳系統瀏覽器）
-    if (modal.pdfUrl) {
-      openPdfDriveUrl(modal.pdfUrl);
+    // 優先 local 下載（瀏覽器原生 download dialog）；Drive URL 只當 fallback
+    if (modal.pdf) {
+      openPdfBlob(modal.pdf.blob, modal.pdf.filename);
       return;
     }
-    if (modal.pdf) openPdfBlob(modal.pdf.blob, modal.pdf.filename);
+    if (modal.pdfUrl) openPdfDriveUrl(modal.pdfUrl);
   }, [modal]);
 
   if (!loaded) {
@@ -241,7 +248,7 @@ export function App() {
                 onClick={onOpenPdf}
                 style={{ marginBottom: 8, background: 'rgba(255,255,255,.12)' }}
               >
-                開啟契約 PDF
+                下載契約 PDF
               </button>
             )}
             <button className="modal-btn" onClick={reset}>
