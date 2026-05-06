@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react';
 import './App.css';
 import { StarsBackground } from './components/StarsBackground';
-import { Steps } from './components/Steps';
 import { Page1 } from './components/Page1';
 import { Page2 } from './components/Page2';
 import { Page3 } from './components/Page3';
@@ -143,7 +142,6 @@ export function App() {
             }}
           />
         </div>
-        <Steps current={page} total={TOTAL_PAGES} />
 
         {page === 1 && config.media.length > 0 && (
           <div className="carousel-wrap">
