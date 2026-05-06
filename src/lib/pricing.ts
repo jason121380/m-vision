@@ -66,17 +66,19 @@ export function buildSummary(state: FormState, config: AppConfig): SummaryRow[] 
   rows.push({ lbl: '加選項目', val: addon?.label ?? '無', amt: addon?.price ?? 0 });
   if (isV) {
     const vp = config.photographers.find((p) => p.type === 'video' && p.key === state.vpKey);
+    const name = vp ? (vp.role ? `${vp.name}（${vp.role}）` : vp.name) : '—';
     rows.push({
-      lbl: '指定錄影',
-      val: vp ? (vp.role ? `${vp.name}（${vp.role}）` : vp.name) : '—',
+      lbl: `指定錄影　${name}`,
+      val: name,
       amt: vp?.price ?? 0,
     });
   }
   if (isP) {
     const pp = config.photographers.find((p) => p.type === 'photo' && p.key === state.ppKey);
+    const name = pp ? (pp.role ? `${pp.name}（${pp.role}）` : pp.name) : '—';
     rows.push({
-      lbl: '指定攝影',
-      val: pp ? (pp.role ? `${pp.name}（${pp.role}）` : pp.name) : '—',
+      lbl: `指定攝影　${name}`,
+      val: name,
       amt: pp?.price ?? 0,
     });
   }

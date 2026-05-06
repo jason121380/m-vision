@@ -56,8 +56,6 @@ export const DEFAULT_CONFIG: AppConfig = {
     max_video_cameras_per_day: '6',
     max_photo_cameras_per_day: '2',
   },
-  media: [
-    { type: 'video', url: 'https://www.youtube.com/watch?v=4GBF8xtqCnM', alt: 'M Vision banner', poster: '' },
-  ],
+  media: [{ type: 'video', url: '/banner.mp4', alt: 'M Vision banner', poster: '' }],
   bookings: [],
 };
