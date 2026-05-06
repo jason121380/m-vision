@@ -7,21 +7,11 @@ import { Page2 } from './components/Page2';
 import { Page3 } from './components/Page3';
 import { Page4 } from './components/Page4';
 import { PrintableContract } from './components/PrintableContract';
+import { MediaCarousel } from './components/MediaCarousel';
 import { useConfig } from './hooks/useConfig';
 import { initialState, type FormState } from './types';
 import { submitToSheet } from './lib/submission';
 import type { PdfResult } from './lib/pdf';
-
-function triggerBlobDownload(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 60_000);
-}
 
 const TOTAL_PAGES = 4;
 
@@ -29,7 +19,53 @@ type ModalState =
   | { type: 'none' }
   | { type: 'submitting' }
   | { type: 'success'; pdf?: PdfResult }
-  | { type: 'error'; message: string; pdf?: PdfResult };
+  | { type: 'error'; message: string; pdf?: PdfResult }
+  | { type: 'validation'; messages: string[] };
+
+function validatePage(page: number, state: FormState): string[] {
+  const errors: string[] = [];
+  const isV = state.svc === 'video' || state.svc === 'both';
+  const isP = state.svc === 'photo' || state.svc === 'both';
+
+  if (page === 1) {
+    if (!state.year || !state.month || !state.day) errors.push('請填寫活動日期（年月日）');
+    if (!state.svc) errors.push('請選擇服務選項');
+    if (isV && !state.vcKey) errors.push('請選擇錄影機位');
+    if (isP && !state.pcKey) errors.push('請選擇拍照機位');
+    if (isV && !state.vcerKey) errors.push('請選擇錄影儀式');
+    if (isP && !state.pcerKey) errors.push('請選擇拍照儀式');
+  } else if (page === 2) {
+    if (isV && !state.vpKey) errors.push('請選擇動態錄影師');
+    if (isP && !state.ppKey) errors.push('請選擇平面攝影師');
+  } else if (page === 3) {
+    if (!state.groom) errors.push('請填寫先生姓名');
+    if (!state.bride) errors.push('請填寫太太姓名');
+    if (!state.phone) errors.push('請填寫手機號碼');
+    if (!state.wt) errors.push('請選擇宴客時間');
+    if (!state.restaurant) errors.push('請填寫餐廳地址');
+  } else if (page === 4) {
+    if (!state.signature) errors.push('請完成甲方簽名');
+  }
+  return errors;
+}
+
+function openPdf(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  // 先嘗試在新分頁開啟（LINE 等 WebView 會跳系統瀏覽器）
+  const w = window.open(url, '_blank');
+  if (!w) {
+    // 被擋的話 fallback 用 anchor 觸發下載
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 5 * 60_000);
+}
 
 export function App() {
   const { config, loaded } = useConfig();
@@ -49,6 +85,11 @@ export function App() {
   }, []);
 
   const onNext = useCallback(async () => {
+    const errors = validatePage(page, state);
+    if (errors.length > 0) {
+      setModal({ type: 'validation', messages: errors });
+      return;
+    }
     if (page < TOTAL_PAGES) {
       setPage(page + 1);
       window.scrollTo(0, 0);
@@ -70,10 +111,10 @@ export function App() {
     }
   }, [page]);
 
-  const onDownload = useCallback(() => {
+  const onOpenPdf = useCallback(() => {
     if (modal.type !== 'success' && modal.type !== 'error') return;
     if (!modal.pdf) return;
-    triggerBlobDownload(modal.pdf.blob, modal.pdf.filename);
+    openPdf(modal.pdf.blob, modal.pdf.filename);
   }, [modal]);
 
   if (!loaded) {
@@ -91,6 +132,12 @@ export function App() {
       <div className="app">
         <div className="brand">{config.settings.company_name ?? 'M 視覺影像記錄公司'}</div>
         <Steps current={page} total={TOTAL_PAGES} />
+
+        {page === 1 && config.media.length > 0 && (
+          <div className="carousel-wrap">
+            <MediaCarousel items={config.media} />
+          </div>
+        )}
 
         <div className="pages">
           {page === 1 && <Page1 state={state} update={update} config={config} />}
@@ -116,6 +163,23 @@ export function App() {
 
       <PrintableContract state={state} config={config} />
 
+      {modal.type === 'validation' && (
+        <div className="modal">
+          <div className="modal-box">
+            <div className="modal-emoji">⚠️</div>
+            <div className="modal-title">尚未完成</div>
+            <div className="modal-body" style={{ textAlign: 'left' }}>
+              {modal.messages.map((m, i) => (
+                <div key={i} style={{ padding: '4px 0' }}>• {m}</div>
+              ))}
+            </div>
+            <button className="modal-btn" onClick={() => setModal({ type: 'none' })}>
+              我知道了
+            </button>
+          </div>
+        </div>
+      )}
+
       {modal.type === 'success' && (
         <div className="modal">
           <div className="modal-box">
@@ -131,10 +195,10 @@ export function App() {
             {modal.pdf && (
               <button
                 className="modal-btn"
-                onClick={onDownload}
+                onClick={onOpenPdf}
                 style={{ marginBottom: 8, background: 'rgba(255,255,255,.12)' }}
               >
-                下載契約 PDF
+                開啟契約 PDF
               </button>
             )}
             <button className="modal-btn" onClick={reset}>

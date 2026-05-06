@@ -4,8 +4,22 @@ export type ServiceRow = { key: string; label: string; price: number };
 export type CameraRow = { type: CamType; key: string; label: string; price: number; note: string };
 export type CeremonyRow = { type: CamType; key: string; label: string; price: number };
 export type AddonRow = { key: string; label: string; price: number };
-export type PhotographerRow = { type: CamType; key: string; name: string; role: string; price: number };
+export type PhotographerRow = {
+  type: CamType;
+  key: string;
+  name: string;
+  role: string;
+  price: number;
+  photo: string;
+  desc: string;
+};
 export type SettingsMap = Record<string, string>;
+export type MediaRow = {
+  type: 'image' | 'video';
+  url: string;
+  alt: string;
+  poster: string;
+};
 
 export type AppConfig = {
   services: ServiceRow[];
@@ -14,6 +28,7 @@ export type AppConfig = {
   addons: AddonRow[];
   photographers: PhotographerRow[];
   settings: SettingsMap;
+  media: MediaRow[];
 };
 
 export type ServiceKey = '' | 'video' | 'photo' | 'both';
@@ -25,8 +40,6 @@ export type FormState = {
   month: string;
   day: string;
   svc: ServiceKey;
-  vmTime: TimeKey;
-  pmTime: TimeKey;
   vcKey: string;
   pcKey: string;
   vcerKey: string;
@@ -56,8 +69,6 @@ export const initialState: FormState = {
   month: '',
   day: '',
   svc: '',
-  vmTime: '',
-  pmTime: '',
   vcKey: '',
   pcKey: '',
   vcerKey: '',

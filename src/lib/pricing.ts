@@ -49,24 +49,14 @@ export function buildSummary(state: FormState, config: AppConfig): SummaryRow[] 
   const videoPrice = config.services.find((s) => s.key === 'video')?.price ?? 0;
   const photoPrice = config.services.find((s) => s.key === 'photo')?.price ?? 0;
   if (isV) {
-    const vmLabel = state.vmTime === 'lunch' ? '午宴' : state.vmTime === 'dinner' ? '晚宴' : '';
-    rows.push({
-      lbl: '錄影選項',
-      val: vmLabel ? `${vmLabel} ${videoPrice.toLocaleString('zh-TW')}元` : '—',
-      amt: state.vmTime ? videoPrice : 0,
-    });
+    rows.push({ lbl: '錄影', val: `純宴客 ${videoPrice.toLocaleString('zh-TW')}元`, amt: videoPrice });
     const vc = config.cameras.find((c) => c.type === 'video' && c.key === state.vcKey);
     rows.push({ lbl: '錄影機位', val: vc?.label ?? '—', amt: vc?.price ?? 0 });
     const vcer = config.ceremonies.find((c) => c.type === 'video' && c.key === state.vcerKey);
     rows.push({ lbl: '錄影儀式', val: vcer?.label ?? '—', amt: vcer?.price ?? 0 });
   }
   if (isP) {
-    const pmLabel = state.pmTime === 'lunch' ? '午宴' : state.pmTime === 'dinner' ? '晚宴' : '';
-    rows.push({
-      lbl: '拍照選項',
-      val: pmLabel ? `${pmLabel} ${photoPrice.toLocaleString('zh-TW')}元` : '—',
-      amt: state.pmTime ? photoPrice : 0,
-    });
+    rows.push({ lbl: '拍照', val: `純宴客 ${photoPrice.toLocaleString('zh-TW')}元`, amt: photoPrice });
     const pc = config.cameras.find((c) => c.type === 'photo' && c.key === state.pcKey);
     rows.push({ lbl: '拍照機位', val: pc?.label ?? '—', amt: pc?.price ?? 0 });
     const pcer = config.ceremonies.find((c) => c.type === 'photo' && c.key === state.pcerKey);

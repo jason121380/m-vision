@@ -95,9 +95,9 @@ export function PrintableContract({ state, config }: Props) {
       <div style={sectionStyle}>
         <div style={headerStyle}>費用明細</div>
         <div style={rowStyle}><span>服務選項</span><span>{svcLabel}</span></div>
-        {isV && state.vmTime && (
+        {isV && (
           <div style={rowStyle}>
-            <span>錄影（{state.vmTime === 'lunch' ? '午宴' : '晚宴'}）</span>
+            <span>錄影（純宴客）</span>
             <span>{videoBase.toLocaleString('zh-TW')} 元</span>
           </div>
         )}
@@ -107,9 +107,9 @@ export function PrintableContract({ state, config }: Props) {
         {isV && vcer && (
           <div style={rowStyle}><span>錄影儀式（{vcer.label}）</span><span>{vcer.price.toLocaleString('zh-TW')} 元</span></div>
         )}
-        {isP && state.pmTime && (
+        {isP && (
           <div style={rowStyle}>
-            <span>拍照（{state.pmTime === 'lunch' ? '午宴' : '晚宴'}）</span>
+            <span>拍照（純宴客）</span>
             <span>{photoBase.toLocaleString('zh-TW')} 元</span>
           </div>
         )}
