@@ -45,6 +45,10 @@ function normalizeMediaUrl(url: string, type: 'image' | 'video'): string {
         rel: '0',
         playsinline: '1',
         iv_load_policy: '3',
+        fs: '0',
+        disablekb: '1',
+        cc_load_policy: '0',
+        showinfo: '0',
       });
       return `https://www.youtube-nocookie.com/embed/${id}?${params.toString()}`;
     }
