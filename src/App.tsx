@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import './App.css';
 import { StarsBackground } from './components/StarsBackground';
 import { Page1 } from './components/Page1';
@@ -17,8 +17,8 @@ const TOTAL_PAGES = 4;
 type ModalState =
   | { type: 'none' }
   | { type: 'submitting' }
-  | { type: 'success'; pdf?: PdfResult }
-  | { type: 'error'; message: string; pdf?: PdfResult }
+  | { type: 'success'; pdf?: PdfResult; pdfUrl?: string }
+  | { type: 'error'; message: string; pdf?: PdfResult; pdfUrl?: string }
   | { type: 'validation'; messages: string[] };
 
 function validatePage(page: number, state: FormState): string[] {
@@ -50,12 +50,20 @@ function validatePage(page: number, state: FormState): string[] {
   return errors;
 }
 
-function openPdf(blob: Blob, filename: string) {
+function withExternalBrowser(url: string): string {
+  // LINE WebView 看到 ?openExternalBrowser=1 會把連結交給系統瀏覽器
+  if (!url) return url;
+  return url + (url.includes('?') ? '&' : '?') + 'openExternalBrowser=1';
+}
+
+function openPdfDriveUrl(driveUrl: string) {
+  window.open(withExternalBrowser(driveUrl), '_blank');
+}
+
+function openPdfBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
-  // 先嘗試在新分頁開啟（LINE 等 WebView 會跳系統瀏覽器）
   const w = window.open(url, '_blank');
   if (!w) {
-    // 被擋的話 fallback 用 anchor 觸發下載
     const a = document.createElement('a');
     a.href = url;
     a.download = filename;
@@ -93,29 +101,35 @@ export function App() {
     }
     if (page < TOTAL_PAGES) {
       setPage(page + 1);
-      window.scrollTo(0, 0);
       return;
     }
     setModal({ type: 'submitting' });
     const res = await submitToSheet(state, config);
     if (res.ok) {
-      setModal({ type: 'success', pdf: res.pdf });
+      setModal({ type: 'success', pdf: res.pdf, pdfUrl: res.pdfUrl });
     } else {
-      setModal({ type: 'error', message: res.error ?? '提交失敗', pdf: res.pdf });
+      setModal({ type: 'error', message: res.error ?? '提交失敗', pdf: res.pdf, pdfUrl: res.pdfUrl });
     }
   }, [page, state, config]);
 
   const onBack = useCallback(() => {
     if (page > 1) {
       setPage(page - 1);
-      window.scrollTo(0, 0);
     }
+  }, [page]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0 });
   }, [page]);
 
   const onOpenPdf = useCallback(() => {
     if (modal.type !== 'success' && modal.type !== 'error') return;
-    if (!modal.pdf) return;
-    openPdf(modal.pdf.blob, modal.pdf.filename);
+    // 優先用 Drive URL（LINE 內部用 openExternalBrowser=1 會跳系統瀏覽器）
+    if (modal.pdfUrl) {
+      openPdfDriveUrl(modal.pdfUrl);
+      return;
+    }
+    if (modal.pdf) openPdfBlob(modal.pdf.blob, modal.pdf.filename);
   }, [modal]);
 
   if (!loaded) {
@@ -175,6 +189,16 @@ export function App() {
 
       <PrintableContract state={state} config={config} />
 
+      {modal.type === 'submitting' && (
+        <div className="modal">
+          <div className="modal-box">
+            <div className="spinner" />
+            <div className="modal-title">處理中…</div>
+            <div className="modal-body">正在產生契約 PDF<br />並上傳到雲端，請稍候</div>
+          </div>
+        </div>
+      )}
+
       {modal.type === 'validation' && (
         <div className="modal">
           <div className="modal-box">
@@ -204,7 +228,7 @@ export function App() {
               <br />
               將盡快與您聯繫確認
             </div>
-            {modal.pdf && (
+            {(modal.pdf || modal.pdfUrl) && (
               <button
                 className="modal-btn"
                 onClick={onOpenPdf}
