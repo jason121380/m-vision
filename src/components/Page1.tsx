@@ -61,7 +61,7 @@ export function Page1({ state, update, config }: Props) {
         <div className="stitle-zh">服 務 選 項</div>
         <div className="stitle-en">Services</div>
       </div>
-      <div className="card" style={{ maxWidth: 260, margin: '0 auto' }}>
+      <div className="card">
         {config.services.map((s) => {
           const blocked =
             (s.key === 'video' && vFull) ||

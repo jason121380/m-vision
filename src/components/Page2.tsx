@@ -95,7 +95,7 @@ export function Page2({ state, update, config }: Props) {
       <div className="stitle">
         <div className="stitle-zh">加 選 項 目</div>
       </div>
-      <div className="card" style={{ maxWidth: 320, margin: '0 auto' }}>
+      <div className="card">
         {config.addons.map((a) => (
           <div
             key={a.key}
