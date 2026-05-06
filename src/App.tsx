@@ -29,6 +29,8 @@ function validatePage(page: number, state: FormState): string[] {
   if (page === 1) {
     if (!state.year || !state.month || !state.day) errors.push('請填寫活動日期（年月日）');
     if (!state.svc) errors.push('請選擇服務選項');
+    if (isV && !state.vBanquet) errors.push('請選擇錄影 純宴客');
+    if (isP && !state.pBanquet) errors.push('請選擇拍照 純宴客');
     if (isV && !state.vcKey) errors.push('請選擇錄影機位');
     if (isP && !state.pcKey) errors.push('請選擇拍照機位');
     if (isV && !state.vcerKey) errors.push('請選擇錄影儀式');

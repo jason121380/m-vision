@@ -91,11 +91,14 @@ export function Page1({ state, update, config }: Props) {
           {isV && (
             <div>
               <div className="col-h" style={{ marginBottom: 8 }}>
-                <div className="col-h-zh">錄 影</div>
+                <div className="col-h-zh">錄 影 <span className="col-h-req">必選</span></div>
                 <div className="col-h-en">Video recording</div>
               </div>
               <div className="card">
-                <div className="opt sel" style={{ cursor: 'default' }}>
+                <div
+                  className={optClass(state.vBanquet)}
+                  onClick={() => update({ vBanquet: !state.vBanquet })}
+                >
                   <div className="rc"><div className="rd" /></div>
                   <div className="opt-t" style={{ fontSize: 13 }}>純宴客</div>
                   <div className="opt-p">{videoPrice.toLocaleString('zh-TW')}</div>
@@ -106,11 +109,14 @@ export function Page1({ state, update, config }: Props) {
           {isP && (
             <div className={onlyP ? 'col-right' : ''}>
               <div className="col-h" style={{ marginBottom: 8 }}>
-                <div className="col-h-zh">拍 照</div>
+                <div className="col-h-zh">拍 照 <span className="col-h-req">必選</span></div>
                 <div className="col-h-en">Photography</div>
               </div>
               <div className="card">
-                <div className="opt sel" style={{ cursor: 'default' }}>
+                <div
+                  className={optClass(state.pBanquet)}
+                  onClick={() => update({ pBanquet: !state.pBanquet })}
+                >
                   <div className="rc"><div className="rd" /></div>
                   <div className="opt-t" style={{ fontSize: 13 }}>純宴客</div>
                   <div className="opt-p">{photoPrice.toLocaleString('zh-TW')}</div>

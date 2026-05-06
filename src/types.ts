@@ -41,6 +41,8 @@ export type FormState = {
   month: string;
   day: string;
   svc: ServiceKey;
+  vBanquet: boolean;
+  pBanquet: boolean;
   vcKey: string;
   pcKey: string;
   vcerKey: string;
@@ -70,6 +72,8 @@ export const initialState: FormState = {
   month: '',
   day: '',
   svc: '',
+  vBanquet: false,
+  pBanquet: false,
   vcKey: '',
   pcKey: '',
   vcerKey: '',
