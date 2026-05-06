@@ -69,14 +69,6 @@ export function MediaCarousel({ items }: Props) {
           onError={advance}
         />
       )}
-
-      {items.length > 1 && (
-        <div className="carousel-dots">
-          {items.map((_, i) => (
-            <span key={i} className={`carousel-dot${i === idx ? ' active' : ''}`} onClick={() => setIdx(i)} />
-          ))}
-        </div>
-      )}
     </div>
   );
 }
