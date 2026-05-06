@@ -24,8 +24,6 @@ export function Page4({ state, update, config }: Props) {
 
   return (
     <div className="page active">
-      <div className="pnum">04</div>
-
       <div className="fg" style={{ marginBottom: 6 }}>
         <div className="flbl">客戶確認</div>
         <div className="card">

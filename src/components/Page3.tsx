@@ -24,8 +24,6 @@ export function Page3({ state, update, config }: Props) {
 
   return (
     <div className="page active">
-      <div className="pnum">03</div>
-
       <div className="fg">
         <div className="flbl"><span className="req-dot" />先生姓名（必填）</div>
         <input

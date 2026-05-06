@@ -40,8 +40,6 @@ export function Page1({ state, update, config }: Props) {
 
   return (
     <div className="page active">
-      <div className="pnum">01</div>
-
       <div className="stitle">
         <div className="stitle-zh">活 動 日 期</div>
         <div className="stitle-en">Event Date</div>

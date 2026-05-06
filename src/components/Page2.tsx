@@ -83,8 +83,6 @@ export function Page2({ state, update, config }: Props) {
 
   return (
     <div className="page active">
-      <div className="pnum">02</div>
-
       <div className="stitle">
         <div className="stitle-zh">加 選 項 目</div>
       </div>

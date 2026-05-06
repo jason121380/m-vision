@@ -6,6 +6,7 @@ import { Page3 } from './components/Page3';
 import { Page4 } from './components/Page4';
 import { PrintableContract } from './components/PrintableContract';
 import { MediaCarousel } from './components/MediaCarousel';
+import { Steps } from './components/Steps';
 import { useConfig } from './hooks/useConfig';
 import { initialState, type FormState } from './types';
 import { submitToSheet } from './lib/submission';
@@ -141,6 +142,8 @@ export function App() {
             <MediaCarousel items={config.media} />
           </div>
         )}
+
+        <Steps current={page} total={TOTAL_PAGES} />
 
         <div className="pages">
           {page === 1 && <Page1 state={state} update={update} config={config} />}
