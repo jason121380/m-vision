@@ -65,7 +65,12 @@ export function buildPayload(state: FormState, config: AppConfig, pdf?: PdfResul
   };
 }
 
-export type SubmissionResult = { ok: boolean; error?: string; pdf?: PdfResult };
+export type SubmissionResult = {
+  ok: boolean;
+  error?: string;
+  pdf?: PdfResult;
+  pdfUrl?: string;
+};
 
 export async function submitToSheet(
   state: FormState,
@@ -85,14 +90,20 @@ export async function submitToSheet(
 
   const payload = buildPayload(state, config, pdf);
   try {
-    // text/plain 避免觸發 CORS preflight；Apps Script 端用 JSON.parse(e.postData.contents) 解析
-    await fetch(SUBMISSION_ENDPOINT_URL, {
+    // text/plain 是 simple CORS request，不會觸發 preflight，Apps Script 預設會回 CORS header
+    const res = await fetch(SUBMISSION_ENDPOINT_URL, {
       method: 'POST',
-      mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload),
     });
-    return { ok: true, pdf };
+    let pdfUrl = '';
+    try {
+      const data = await res.json();
+      if (data && typeof data.pdfUrl === 'string') pdfUrl = data.pdfUrl;
+    } catch {
+      // 讀不到 response（CORS 或 redirect），不阻擋成功流程
+    }
+    return { ok: true, pdf, pdfUrl };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err), pdf };
   }
