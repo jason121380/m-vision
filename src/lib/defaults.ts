@@ -52,5 +52,5 @@ export const DEFAULT_CONFIG: AppConfig = {
     deposit: '3000',
     court: '台灣彰化地方法院',
   },
-  media: [],
+  media: [{ type: 'video', url: '/banner.mp4', alt: 'M Vision banner', poster: '' }],
 };

@@ -83,8 +83,6 @@ export function Page2({ state, update, config }: Props) {
 
   return (
     <div className="page active">
-      <div className="pnum">02</div>
-
       <div className="stitle">
         <div className="stitle-zh">加 選 項 目</div>
       </div>
@@ -104,32 +102,28 @@ export function Page2({ state, update, config }: Props) {
         ))}
       </div>
 
-      {(isV || isP) && (
-        <div className="g2" style={{ marginTop: 20 }}>
-          {isV && (
-            <div>
-              <div className="col-h" style={{ marginBottom: 8 }}>
-                <div className="col-h-zh" style={{ fontSize: 13 }}>指定動態錄影師</div>
-              </div>
-              <div className="pcard">
-                {videoPhotographers.map((p) =>
-                  renderPhotographer(p, state.vpKey === p.key, () => update({ vpKey: p.key })),
-                )}
-              </div>
-            </div>
-          )}
-          {isP && (
-            <div>
-              <div className="col-h" style={{ marginBottom: 8 }}>
-                <div className="col-h-zh" style={{ fontSize: 13 }}>指定平面攝影師</div>
-              </div>
-              <div className="pcard">
-                {photoPhotographers.map((p) =>
-                  renderPhotographer(p, state.ppKey === p.key, () => update({ ppKey: p.key })),
-                )}
-              </div>
-            </div>
-          )}
+      {isV && (
+        <div style={{ marginTop: 20 }}>
+          <div className="col-h" style={{ marginBottom: 8 }}>
+            <div className="col-h-zh" style={{ fontSize: 13 }}>指定動態錄影師</div>
+          </div>
+          <div className="pcard">
+            {videoPhotographers.map((p) =>
+              renderPhotographer(p, state.vpKey === p.key, () => update({ vpKey: p.key })),
+            )}
+          </div>
+        </div>
+      )}
+      {isP && (
+        <div style={{ marginTop: 20 }}>
+          <div className="col-h" style={{ marginBottom: 8 }}>
+            <div className="col-h-zh" style={{ fontSize: 13 }}>指定平面攝影師</div>
+          </div>
+          <div className="pcard">
+            {photoPhotographers.map((p) =>
+              renderPhotographer(p, state.ppKey === p.key, () => update({ ppKey: p.key })),
+            )}
+          </div>
         </div>
       )}
       <div className="note">如勾選不指定，則輪班安排老師檔期</div>
