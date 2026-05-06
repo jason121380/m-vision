@@ -138,7 +138,9 @@ export function useConfig() {
           : DEFAULT_CONFIG.photographers,
         settings: useRows(settings, 'settings')
           ? settings.reduce<SettingsMap>((acc, r) => {
-              if (r.key) acc[r.key] = r.value ?? '';
+              if (!r.key) return acc;
+              const v = r.value ?? '';
+              acc[r.key] = r.key === 'logo' ? normalizeMediaUrl(v, 'image') : v;
               return acc;
             }, {})
           : DEFAULT_CONFIG.settings,
