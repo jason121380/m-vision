@@ -1,4 +1,5 @@
 import type { AppConfig, FormState } from '../types';
+import { photographerBlocked, ymd } from '../lib/bookings';
 
 type Props = {
   state: FormState;
@@ -7,23 +8,30 @@ type Props = {
 };
 
 const optClass = (sel: boolean) => `opt${sel ? ' sel' : ''}`;
-const popClass = (sel: boolean) => `popt${sel ? ' sel' : ''}`;
+const popClass = (sel: boolean, dis = false) => `popt${sel ? ' sel' : ''}${dis ? ' dis' : ''}`;
 
 export function Page2({ state, update, config }: Props) {
   const isV = state.svc === 'video' || state.svc === 'both';
   const isP = state.svc === 'photo' || state.svc === 'both';
+  const dateKey = ymd(state.year, state.month, state.day);
 
   // 隱藏「無選（key=none）」那一列；保留「不指定（輪班）」
   const videoPhotographers = config.photographers.filter((p) => p.type === 'video' && p.key !== 'none');
   const photoPhotographers = config.photographers.filter((p) => p.type === 'photo' && p.key !== 'none');
 
-  const renderPhotographer = (p: (typeof videoPhotographers)[number], selected: boolean, onSelect: () => void) => {
+  const renderPhotographer = (
+    p: (typeof videoPhotographers)[number],
+    selected: boolean,
+    onSelect: () => void,
+  ) => {
     const isAny = p.key === 'any';
+    const blocked = !isAny && photographerBlocked(config, dateKey, p.type, p.key);
     return (
       <div
         key={p.key}
-        className={popClass(selected)}
-        onClick={onSelect}
+        className={popClass(selected, blocked)}
+        onClick={blocked ? undefined : onSelect}
+        aria-disabled={blocked}
       >
         {isAny ? (
           <div
@@ -58,6 +66,7 @@ export function Page2({ state, update, config }: Props) {
         <div className="pinfo">
           <div className="pname" style={{ fontSize: 12 }}>
             {isAny ? `0元 — ${p.name}` : p.name}
+            {blocked && <span className="badge-full">當日已排檔</span>}
           </div>
           {!isAny && (
             <div className="prole">

@@ -1,4 +1,6 @@
 import type { AppConfig, FormState, ServiceKey } from '../types';
+import { Calendar } from './Calendar';
+import { camerasLeft, cameraCount, videoFull, photoFull, ymd } from '../lib/bookings';
 
 type Props = {
   state: FormState;
@@ -7,7 +9,7 @@ type Props = {
 };
 
 const optClass = (sel: boolean) => `opt${sel ? ' sel' : ''}`;
-const sopClass = (sel: boolean) => `sopt${sel ? ' sel' : ''}`;
+const sopClass = (sel: boolean, dis = false) => `sopt${sel ? ' sel' : ''}${dis ? ' dis' : ''}`;
 
 export function Page1({ state, update, config }: Props) {
   const isV = state.svc === 'video' || state.svc === 'both';
@@ -22,20 +24,23 @@ export function Page1({ state, update, config }: Props) {
   const videoPrice = config.services.find((s) => s.key === 'video')?.price ?? 0;
   const photoPrice = config.services.find((s) => s.key === 'photo')?.price ?? 0;
 
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 6 }, (_, i) => currentYear + i);
-  const months = Array.from({ length: 12 }, (_, i) => i + 1);
-  const yearNum = Number(state.year) || currentYear;
-  const monthNum = Number(state.month) || 0;
-  const daysInMonth = monthNum > 0 ? new Date(yearNum, monthNum, 0).getDate() : 31;
-  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  const dateKey = ymd(state.year, state.month, state.day);
+  const vCamsLeft = camerasLeft(config, dateKey, 'video');
+  const pCamsLeft = camerasLeft(config, dateKey, 'photo');
+  const vFull = videoFull(config, dateKey);
+  const pFull = photoFull(config, dateKey);
 
-  // 月份變化時，把超出當月日數的「日」清掉
-  const onMonthChange = (m: string) => {
-    const newMonthNum = Number(m) || 0;
-    const newDays = newMonthNum > 0 ? new Date(yearNum, newMonthNum, 0).getDate() : 31;
-    const dNum = Number(state.day) || 0;
-    update({ month: m, day: dNum > newDays ? '' : state.day });
+  const isCameraBlocked = (type: 'video' | 'photo', label: string): boolean => {
+    if (!dateKey) return false;
+    const need = cameraCount(label);
+    if (need === 0) return false;
+    const left = type === 'video' ? vCamsLeft : pCamsLeft;
+    return need > left;
+  };
+
+  const onSvcChange = (svc: ServiceKey) => {
+    // 若選了一個當日已滿的服務，視為無效；validation 會擋下一頁，這裡仍允許切換
+    update({ svc });
   };
 
   return (
@@ -44,65 +49,39 @@ export function Page1({ state, update, config }: Props) {
         <div className="stitle-zh">活 動 日 期</div>
         <div className="stitle-en">Event Date</div>
       </div>
-      <div className="date-row">
-        <div>
-          <label className="dlbl">年</label>
-          <select
-            className="dinput dinput-select"
-            value={state.year}
-            onChange={(e) => update({ year: e.target.value })}
-          >
-            <option value="">年份</option>
-            {years.map((y) => (
-              <option key={y} value={String(y)}>{y}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="dlbl">月</label>
-          <select
-            className="dinput dinput-select"
-            value={state.month}
-            onChange={(e) => onMonthChange(e.target.value)}
-          >
-            <option value="">月</option>
-            {months.map((m) => (
-              <option key={m} value={String(m)}>{m}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="dlbl">日</label>
-          <select
-            className="dinput dinput-select"
-            value={state.day}
-            onChange={(e) => update({ day: e.target.value })}
-          >
-            <option value="">日</option>
-            {days.map((d) => (
-              <option key={d} value={String(d)}>{d}</option>
-            ))}
-          </select>
-        </div>
-      </div>
+      <Calendar
+        config={config}
+        year={state.year}
+        month={state.month}
+        day={state.day}
+        onPick={(y, m, d) => update({ year: y, month: m, day: d })}
+      />
 
       <div className="stitle" style={{ marginTop: 16 }}>
         <div className="stitle-zh">服 務 選 項</div>
         <div className="stitle-en">Services</div>
       </div>
       <div className="card" style={{ maxWidth: 260, margin: '0 auto' }}>
-        {config.services.map((s) => (
-          <div
-            key={s.key}
-            className={optClass(state.svc === s.key)}
-            onClick={() => update({ svc: s.key as ServiceKey })}
-          >
-            <div className="rc">
-              <div className="rd" />
+        {config.services.map((s) => {
+          const blocked =
+            (s.key === 'video' && vFull) ||
+            (s.key === 'photo' && pFull) ||
+            (s.key === 'both' && (vFull || pFull));
+          const cls = `${optClass(state.svc === s.key)}${blocked ? ' dis' : ''}`;
+          return (
+            <div
+              key={s.key}
+              className={cls}
+              onClick={blocked ? undefined : () => onSvcChange(s.key as ServiceKey)}
+              aria-disabled={blocked}
+            >
+              <div className="rc">
+                <div className="rd" />
+              </div>
+              <div className="opt-t">{s.label}{blocked && <span className="badge-full">當日已滿</span>}</div>
             </div>
-            <div className="opt-t">{s.label}</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {(isV || isP) && (
@@ -165,38 +144,46 @@ export function Page1({ state, update, config }: Props) {
           <div className="g2">
             {isV && (
               <div className="card">
-                {videoCams.map((c) => (
-                  <div
-                    key={c.key}
-                    className={sopClass(state.vcKey === c.key)}
-                    onClick={() => update({ vcKey: c.key })}
-                  >
-                    <div className="src">
-                      <div className="srd" />
+                {videoCams.map((c) => {
+                  const blocked = isCameraBlocked('video', c.label);
+                  return (
+                    <div
+                      key={c.key}
+                      className={sopClass(state.vcKey === c.key, blocked)}
+                      onClick={blocked ? undefined : () => update({ vcKey: c.key })}
+                      aria-disabled={blocked}
+                    >
+                      <div className="src">
+                        <div className="srd" />
+                      </div>
+                      <div className="sopt-t">
+                        {c.label} {c.price.toLocaleString('zh-TW')}元
+                      </div>
                     </div>
-                    <div className="sopt-t">
-                      {c.label} {c.price.toLocaleString('zh-TW')}元
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
             {isP && (
               <div className={`card${onlyP ? ' col-right' : ''}`}>
-                {photoCams.map((c) => (
-                  <div
-                    key={c.key}
-                    className={sopClass(state.pcKey === c.key)}
-                    onClick={() => update({ pcKey: c.key })}
-                  >
-                    <div className="src">
-                      <div className="srd" />
+                {photoCams.map((c) => {
+                  const blocked = isCameraBlocked('photo', c.label);
+                  return (
+                    <div
+                      key={c.key}
+                      className={sopClass(state.pcKey === c.key, blocked)}
+                      onClick={blocked ? undefined : () => update({ pcKey: c.key })}
+                      aria-disabled={blocked}
+                    >
+                      <div className="src">
+                        <div className="srd" />
+                      </div>
+                      <div className="sopt-t">
+                        {c.label} {c.price.toLocaleString('zh-TW')}元
+                      </div>
                     </div>
-                    <div className="sopt-t">
-                      {c.label} {c.price.toLocaleString('zh-TW')}元
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
