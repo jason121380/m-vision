@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import './App.css';
 import { Page1 } from './components/Page1';
 import { Page2 } from './components/Page2';
@@ -56,6 +56,12 @@ export function App() {
   const [state, setState] = useState<FormState>(initialState);
   const [page, setPage] = useState(1);
   const [modal, setModal] = useState<ModalState>({ type: 'none' });
+  const topRef = useRef<HTMLDivElement>(null);
+
+  // 阻擋瀏覽器 auto-restore scroll 位置
+  useEffect(() => {
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  }, []);
 
   const update = useCallback((patch: Partial<FormState>) => {
     setState((s) => ({ ...s, ...patch }));
@@ -69,6 +75,8 @@ export function App() {
   }, []);
 
   const doScroll = useCallback(() => {
+    // sentinel 元素 align top — 不依賴 scrollTop，跟 sticky/transform 並存最穩
+    topRef.current?.scrollIntoView({ block: 'start' });
     window.scrollTo(0, 0);
     if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
     document.documentElement.scrollTop = 0;
@@ -129,6 +137,7 @@ export function App() {
   return (
     <>
       <div className="app">
+        <div ref={topRef} aria-hidden style={{ position: 'absolute', top: 0, left: 0, height: 1, width: 1, pointerEvents: 'none' }} />
         <div className="brand">
           <img
             src={config.settings.logo || '/logo.png'}

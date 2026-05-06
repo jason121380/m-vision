@@ -50,7 +50,7 @@ export function Page2({ state, update, config }: Props) {
             <div className="srd" />
           </div>
         ) : (
-          <div className="avatar" style={{ width: 38, height: 38, fontSize: 11, overflow: 'hidden' }}>
+          <div className="avatar">
             {p.photo ? (
               <img
                 src={p.photo}
@@ -64,7 +64,7 @@ export function Page2({ state, update, config }: Props) {
           </div>
         )}
         <div className="pinfo">
-          <div className="pname" style={{ fontSize: 12 }}>
+          <div className="pname">
             {isAny ? `0元 — ${p.name}` : p.name}
             {blocked && <span className="badge-full">當日已排檔</span>}
           </div>
