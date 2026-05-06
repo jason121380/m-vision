@@ -62,18 +62,13 @@ function openPdfDriveUrl(driveUrl: string) {
 
 function openPdfBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
-  const w = window.open(url, '_blank');
-  if (!w) {
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.target = '_blank';
-    a.rel = 'noopener';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }
-  setTimeout(() => URL.revokeObjectURL(url), 5 * 60_000);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 export function App() {
@@ -143,12 +138,12 @@ export function App() {
 
   const onOpenPdf = useCallback(() => {
     if (modal.type !== 'success' && modal.type !== 'error') return;
-    // 優先用 Drive URL（LINE 內部用 openExternalBrowser=1 會跳系統瀏覽器）
-    if (modal.pdfUrl) {
-      openPdfDriveUrl(modal.pdfUrl);
+    // 優先 local 下載（瀏覽器原生 download dialog）；Drive URL 只當 fallback
+    if (modal.pdf) {
+      openPdfBlob(modal.pdf.blob, modal.pdf.filename);
       return;
     }
-    if (modal.pdf) openPdfBlob(modal.pdf.blob, modal.pdf.filename);
+    if (modal.pdfUrl) openPdfDriveUrl(modal.pdfUrl);
   }, [modal]);
 
   if (!loaded) {
@@ -253,7 +248,7 @@ export function App() {
                 onClick={onOpenPdf}
                 style={{ marginBottom: 8, background: 'rgba(255,255,255,.12)' }}
               >
-                開啟契約 PDF
+                下載契約 PDF
               </button>
             )}
             <button className="modal-btn" onClick={reset}>
