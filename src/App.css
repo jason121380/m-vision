@@ -11,7 +11,7 @@ html{scroll-padding-top:80px}
     radial-gradient(ellipse 45% 35% at 72% 55%, rgba(30,20,70,.35) 0%, transparent 50%),
     radial-gradient(ellipse 30% 20% at 55% 20%, rgba(100,80,160,.2) 0%, transparent 45%)}
 
-.app{position:relative;z-index:1;min-height:100vh;max-width:430px;margin:0 auto;padding-bottom:70px}
+.app{position:relative;z-index:1;min-height:100vh;max-width:430px;margin:0 auto;padding-bottom:24px}
 
 .brand{background:#fff;display:flex;align-items:center;justify-content:center;
   padding:10px 20px;border-bottom:1px solid rgba(0,0,0,.08);
@@ -173,9 +173,7 @@ html{scroll-padding-top:80px}
 .dot.active{width:20px;border-radius:4px;background:rgba(255,255,255,.75)}
 .dot.done{background:rgba(255,255,255,.4)}
 
-.bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;
-  padding:10px 20px 18px;display:flex;justify-content:space-between;align-items:center;z-index:200;
-  background:linear-gradient(to top, rgba(7,7,26,0.95) 70%, transparent)}
+.bnav{padding:18px 20px 10px;display:flex;justify-content:space-between;align-items:center;margin-top:12px}
 
 .btn-nav{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);
   color:rgba(255,255,255,.8);font-size:14px;letter-spacing:.1em;padding:10px 22px;
