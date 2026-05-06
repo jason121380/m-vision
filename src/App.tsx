@@ -119,14 +119,26 @@ export function App() {
   }, [page]);
 
   useEffect(() => {
-    // rAF 確保 page 切換 + DOM 重繪完才 scroll；多管齊下涵蓋不同瀏覽器
-    const id = requestAnimationFrame(() => {
+    // 釋放被 focus 的 input（避免 iOS 鍵盤把 scroll 拉回來）
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    const doScroll = () => {
       window.scrollTo(0, 0);
       if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
       document.documentElement.scrollTop = 0;
       document.body.scrollTop = 0;
-    });
-    return () => cancelAnimationFrame(id);
+    };
+    doScroll();
+    // 多次嘗試覆蓋：rAF 後、動畫中、動畫結束後
+    const raf = requestAnimationFrame(doScroll);
+    const t1 = window.setTimeout(doScroll, 100);
+    const t2 = window.setTimeout(doScroll, 450);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
   }, [page]);
 
   const onOpenPdf = useCallback(() => {
