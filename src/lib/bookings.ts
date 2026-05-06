@@ -63,9 +63,9 @@ export function camerasLeft(config: AppConfig, date: string, type: CamType): num
 }
 
 // 該日該攝影師是否已被綁為主攝（無法被選）
-export function photographerBlocked(config: AppConfig, date: string, type: CamType, key: string): boolean {
+// 單人即便兼職動態 + 平面，當日一旦被任一服務綁住就不能再被排，跨 type 都要擋。
+export function photographerBlocked(config: AppConfig, date: string, key: string): boolean {
   const b = findBooking(config.bookings, date);
   if (!b) return false;
-  const leads = type === 'video' ? b.videoLeads : b.photoLeads;
-  return leads.includes(key);
+  return b.videoLeads.includes(key) || b.photoLeads.includes(key);
 }
