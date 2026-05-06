@@ -13,8 +13,9 @@ html,body,#root{height:100%;font-family:-apple-system,BlinkMacSystemFont,'PingFa
 .app{position:relative;z-index:1;min-height:100vh;max-width:430px;margin:0 auto;padding-bottom:70px}
 
 .brand{background:#fff;display:flex;align-items:center;justify-content:center;
-  padding:16px 20px;border-bottom:1px solid rgba(0,0,0,.08)}
-.brand-logo{max-height:64px;max-width:80%;width:auto;display:block;object-fit:contain}
+  padding:10px 20px;border-bottom:1px solid rgba(0,0,0,.08);
+  position:sticky;top:0;z-index:100}
+.brand-logo{max-height:44px;max-width:70%;width:auto;display:block;object-fit:contain}
 .brand-text{font-size:13px;letter-spacing:.22em;color:#1a1530;font-weight:500}
 
 .pages{position:relative}
