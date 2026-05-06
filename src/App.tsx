@@ -119,7 +119,14 @@ export function App() {
   }, [page]);
 
   useEffect(() => {
-    window.scrollTo({ top: 0, left: 0 });
+    // rAF 確保 page 切換 + DOM 重繪完才 scroll；多管齊下涵蓋不同瀏覽器
+    const id = requestAnimationFrame(() => {
+      window.scrollTo(0, 0);
+      if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    });
+    return () => cancelAnimationFrame(id);
   }, [page]);
 
   const onOpenPdf = useCallback(() => {
