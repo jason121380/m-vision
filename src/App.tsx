@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import './App.css';
-import { StarsBackground } from './components/StarsBackground';
 import { Page1 } from './components/Page1';
 import { Page2 } from './components/Page2';
 import { Page3 } from './components/Page3';
@@ -50,26 +49,6 @@ function validatePage(page: number, state: FormState): string[] {
   return errors;
 }
 
-function withExternalBrowser(url: string): string {
-  // LINE WebView 看到 ?openExternalBrowser=1 會把連結交給系統瀏覽器
-  if (!url) return url;
-  return url + (url.includes('?') ? '&' : '?') + 'openExternalBrowser=1';
-}
-
-function openPdfDriveUrl(driveUrl: string) {
-  window.open(withExternalBrowser(driveUrl), '_blank');
-}
-
-function openPdfBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 60_000);
-}
 
 export function App() {
   const { config, loaded } = useConfig();
@@ -124,40 +103,24 @@ export function App() {
       document.documentElement.scrollTop = 0;
       document.body.scrollTop = 0;
     };
+    // 切頁後 800ms 內，每 50ms 檢查一次：若被某個 ancestor 拉走就壓回 0。
+    // 這樣不管動畫、focus、layout shift 怎麼搞，scroll 都一定會在頂部。
     doScroll();
-    // 多次嘗試覆蓋：rAF 後、動畫中、動畫結束後
-    const raf = requestAnimationFrame(doScroll);
-    const t1 = window.setTimeout(doScroll, 100);
-    const t2 = window.setTimeout(doScroll, 450);
-    return () => {
-      cancelAnimationFrame(raf);
-      window.clearTimeout(t1);
-      window.clearTimeout(t2);
-    };
+    let attempts = 0;
+    const interval = window.setInterval(() => {
+      if (window.scrollY !== 0) doScroll();
+      attempts++;
+      if (attempts >= 16) window.clearInterval(interval);
+    }, 50);
+    return () => window.clearInterval(interval);
   }, [page]);
 
-  const onOpenPdf = useCallback(() => {
-    if (modal.type !== 'success' && modal.type !== 'error') return;
-    // 優先 local 下載（瀏覽器原生 download dialog）；Drive URL 只當 fallback
-    if (modal.pdf) {
-      openPdfBlob(modal.pdf.blob, modal.pdf.filename);
-      return;
-    }
-    if (modal.pdfUrl) openPdfDriveUrl(modal.pdfUrl);
-  }, [modal]);
-
   if (!loaded) {
-    return (
-      <>
-        <StarsBackground />
-        <div className="loading">載入中…</div>
-      </>
-    );
+    return <div className="loading">載入中…</div>;
   }
 
   return (
     <>
-      <StarsBackground />
       <div className="app">
         <div className="brand">
           <img
@@ -242,15 +205,6 @@ export function App() {
               <br />
               將盡快與您聯繫確認
             </div>
-            {(modal.pdf || modal.pdfUrl) && (
-              <button
-                className="modal-btn"
-                onClick={onOpenPdf}
-                style={{ marginBottom: 8, background: 'rgba(255,255,255,.12)' }}
-              >
-                下載契約 PDF
-              </button>
-            )}
             <button className="modal-btn" onClick={reset}>
               確 認
             </button>
