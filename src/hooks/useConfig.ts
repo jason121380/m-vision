@@ -133,11 +133,14 @@ export function useConfig() {
               price: num(r.price),
               photo: normalizeMediaUrl(r.photo ?? '', 'image'),
               desc: r.desc ?? '',
+              portfolio: (r.portfolio ?? '').trim(),
             }))
           : DEFAULT_CONFIG.photographers,
         settings: useRows(settings, 'settings')
           ? settings.reduce<SettingsMap>((acc, r) => {
-              if (r.key) acc[r.key] = r.value ?? '';
+              if (!r.key) return acc;
+              const v = r.value ?? '';
+              acc[r.key] = r.key === 'logo' ? normalizeMediaUrl(v, 'image') : v;
               return acc;
             }, {})
           : DEFAULT_CONFIG.settings,

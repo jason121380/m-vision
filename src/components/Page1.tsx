@@ -19,6 +19,9 @@ export function Page1({ state, update, config }: Props) {
   const videoCers = config.ceremonies.filter((c) => c.type === 'video');
   const photoCers = config.ceremonies.filter((c) => c.type === 'photo');
 
+  const videoPrice = config.services.find((s) => s.key === 'video')?.price ?? 0;
+  const photoPrice = config.services.find((s) => s.key === 'photo')?.price ?? 0;
+
   return (
     <div className="page active">
       <div className="pnum">01</div>
@@ -82,6 +85,41 @@ export function Page1({ state, update, config }: Props) {
           </div>
         ))}
       </div>
+
+      {(isV || isP) && (
+        <div className="g2" style={{ marginTop: 18 }}>
+          {isV && (
+            <div>
+              <div className="col-h" style={{ marginBottom: 8 }}>
+                <div className="col-h-zh">錄 影</div>
+                <div className="col-h-en">Video recording</div>
+              </div>
+              <div className="card">
+                <div className="opt sel" style={{ cursor: 'default' }}>
+                  <div className="rc"><div className="rd" /></div>
+                  <div className="opt-t" style={{ fontSize: 13 }}>純宴客</div>
+                  <div className="opt-p">{videoPrice.toLocaleString('zh-TW')}</div>
+                </div>
+              </div>
+            </div>
+          )}
+          {isP && (
+            <div className={onlyP ? 'col-right' : ''}>
+              <div className="col-h" style={{ marginBottom: 8 }}>
+                <div className="col-h-zh">拍 照</div>
+                <div className="col-h-en">Photography</div>
+              </div>
+              <div className="card">
+                <div className="opt sel" style={{ cursor: 'default' }}>
+                  <div className="rc"><div className="rd" /></div>
+                  <div className="opt-t" style={{ fontSize: 13 }}>純宴客</div>
+                  <div className="opt-p">{photoPrice.toLocaleString('zh-TW')}</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {(isV || isP) && (
         <div style={{ marginTop: 18 }}>

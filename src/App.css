@@ -12,8 +12,10 @@ html,body,#root{height:100%;font-family:-apple-system,BlinkMacSystemFont,'PingFa
 
 .app{position:relative;z-index:1;min-height:100vh;max-width:430px;margin:0 auto;padding-bottom:70px}
 
-.brand{text-align:center;padding:16px 20px 6px;
-  font-size:12px;letter-spacing:.2em;color:rgba(255,255,255,.45);font-weight:300}
+.brand{background:#fff;display:flex;align-items:center;justify-content:center;
+  padding:16px 20px;border-bottom:1px solid rgba(0,0,0,.08)}
+.brand-logo{max-height:64px;max-width:80%;width:auto;display:block;object-fit:contain}
+.brand-text{font-size:13px;letter-spacing:.22em;color:#1a1530;font-weight:500}
 
 .pages{position:relative}
 .page{display:none;padding:0 16px 20px;animation:sIn .4s cubic-bezier(.22,1,.36,1) forwards}
@@ -198,9 +200,8 @@ html,body,#root{height:100%;font-family:-apple-system,BlinkMacSystemFont,'PingFa
   color:#fff;font-size:14px;cursor:pointer;font-family:inherit;letter-spacing:.08em}
 
 /* Media carousel */
-.carousel-wrap{padding:0 16px;margin-top:6px}
-.carousel{position:relative;width:100%;aspect-ratio:16/9;border-radius:14px;overflow:hidden;
-  background:#0a0820;border:1px solid rgba(255,255,255,.12)}
+.carousel-wrap{margin-top:0}
+.carousel{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;background:#0a0820}
 .carousel img,.carousel video,.carousel iframe{width:100%;height:100%;object-fit:cover;display:block}
 .carousel-dots{position:absolute;left:0;right:0;bottom:8px;display:flex;justify-content:center;gap:6px;z-index:2}
 .carousel-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.4);cursor:pointer;transition:all .25s}
@@ -209,3 +210,10 @@ html,body,#root{height:100%;font-family:-apple-system,BlinkMacSystemFont,'PingFa
 /* Photographer description */
 .pdesc{font-size:10px;color:rgba(255,255,255,.5);margin-top:4px;line-height:1.5;letter-spacing:.02em}
 .popt.sel .pdesc{color:rgba(255,255,255,.7)}
+
+.pportfolio{display:inline-block;margin-top:6px;padding:3px 8px;font-size:10px;
+  color:rgba(200,185,255,.9);background:rgba(110,90,200,.18);
+  border:1px solid rgba(160,140,255,.35);border-radius:6px;
+  text-decoration:none;letter-spacing:.05em;transition:all .15s}
+.pportfolio:active{background:rgba(110,90,200,.35)}
+.popt.sel .pportfolio{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.35);color:#fff}

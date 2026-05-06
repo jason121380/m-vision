@@ -12,6 +12,7 @@ export type PhotographerRow = {
   price: number;
   photo: string;
   desc: string;
+  portfolio: string;
 };
 export type SettingsMap = Record<string, string>;
 export type MediaRow = {
