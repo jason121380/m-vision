@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import './App.css';
 import { Page1 } from './components/Page1';
 import { Page2 } from './components/Page2';
@@ -68,6 +68,13 @@ export function App() {
     window.scrollTo(0, 0);
   }, []);
 
+  const doScroll = useCallback(() => {
+    window.scrollTo(0, 0);
+    if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
+
   const onNext = useCallback(async () => {
     const errors = validatePage(page, state);
     if (errors.length > 0) {
@@ -75,6 +82,7 @@ export function App() {
       return;
     }
     if (page < TOTAL_PAGES) {
+      doScroll();
       setPage(page + 1);
       return;
     }
@@ -85,27 +93,25 @@ export function App() {
     } else {
       setModal({ type: 'error', message: res.error ?? '提交失敗', pdf: res.pdf, pdfUrl: res.pdfUrl });
     }
-  }, [page, state, config]);
+  }, [page, state, config, doScroll]);
 
   const onBack = useCallback(() => {
     if (page > 1) {
+      doScroll();
       setPage(page - 1);
     }
-  }, [page]);
+  }, [page, doScroll]);
 
-  useEffect(() => {
-    // 釋放被 focus 的 input（避免 iOS 鍵盤把 scroll 拉回來）
+  // 同步在 paint 前 reset，避免使用者看到舊位置一閃即逝
+  useLayoutEffect(() => {
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
-    const doScroll = () => {
-      window.scrollTo(0, 0);
-      if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-    };
-    // 切頁後 800ms 內，每 50ms 檢查一次：若被某個 ancestor 拉走就壓回 0。
-    // 這樣不管動畫、focus、layout shift 怎麼搞，scroll 都一定會在頂部。
+    doScroll();
+  }, [page, doScroll]);
+
+  // Paint 後再 watchdog 800ms，把任何企圖拉回 scroll 的元素全部壓回 0
+  useEffect(() => {
     doScroll();
     let attempts = 0;
     const interval = window.setInterval(() => {
@@ -114,7 +120,7 @@ export function App() {
       if (attempts >= 16) window.clearInterval(interval);
     }, 50);
     return () => window.clearInterval(interval);
-  }, [page]);
+  }, [page, doScroll]);
 
   if (!loaded) {
     return <div className="loading">載入中…</div>;
