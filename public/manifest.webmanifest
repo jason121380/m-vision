@@ -11,15 +11,15 @@
   "lang": "zh-TW",
   "icons": [
     {
-      "src": "/logo.png",
+      "src": "/logo.jpg",
       "sizes": "any",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "any"
     },
     {
-      "src": "/logo.png",
+      "src": "/logo.jpg",
       "sizes": "any",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "maskable"
     }
   ]

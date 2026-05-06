@@ -36,10 +36,12 @@ export const DEFAULT_CONFIG: AppConfig = {
     { type: 'video', key: 'le', name: '阿樂', role: '主理人', price: 3000, photo: '', desc: '', portfolio: '' },
     { type: 'video', key: 'jb', name: '加冰', role: '動態平面老師', price: 1000, photo: '', desc: '', portfolio: '' },
     { type: 'video', key: 'jarvis', name: 'JARVIS', role: '動態老師', price: 1000, photo: '', desc: '', portfolio: '' },
+    { type: 'video', key: 'mark', name: 'Mark', role: '動態老師', price: 1000, photo: '', desc: '', portfolio: '' },
     { type: 'photo', key: 'any', name: '不指定（輪班）', role: '', price: 0, photo: '', desc: '', portfolio: '' },
     { type: 'photo', key: 'le', name: '阿樂', role: '主理人', price: 3000, photo: '', desc: '', portfolio: '' },
+    { type: 'photo', key: 'jb', name: '加冰', role: '動態平面老師', price: 1000, photo: '', desc: '', portfolio: '' },
     { type: 'photo', key: 'ryan', name: 'Ryan', role: '婚紗平面老師', price: 1000, photo: '', desc: '', portfolio: '' },
-    { type: 'photo', key: 'zhh', name: '智皓', role: '婚紗平面老師', price: 1000, photo: '', desc: '', portfolio: '' },
+    { type: 'photo', key: 'zhh', name: '志皓', role: '婚紗平面老師', price: 1000, photo: '', desc: '', portfolio: '' },
   ],
   settings: {
     company_name: 'M 視覺影像記錄公司',
