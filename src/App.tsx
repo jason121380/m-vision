@@ -57,6 +57,7 @@ export function App() {
   const [page, setPage] = useState(1);
   const [modal, setModal] = useState<ModalState>({ type: 'none' });
   const topRef = useRef<HTMLDivElement>(null);
+  const appRef = useRef<HTMLDivElement>(null);
 
   // 阻擋瀏覽器 auto-restore scroll 位置
   useEffect(() => {
@@ -71,11 +72,14 @@ export function App() {
     setState(initialState);
     setPage(1);
     setModal({ type: 'none' });
+    if (appRef.current) appRef.current.scrollTop = 0;
     window.scrollTo(0, 0);
   }, []);
 
   const doScroll = useCallback(() => {
-    // sentinel 元素 align top — 不依賴 scrollTop，跟 sticky/transform 並存最穩
+    // 主要 scroll container 是 .app（顯式 overflow-y:auto），這個一定要 reset
+    if (appRef.current) appRef.current.scrollTop = 0;
+    // 備援：若日後拿掉 .app 的 overflow 改回 body 滾動，這幾行仍能蓋住
     topRef.current?.scrollIntoView({ block: 'start' });
     window.scrollTo(0, 0);
     if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
@@ -123,7 +127,8 @@ export function App() {
     doScroll();
     let attempts = 0;
     const interval = window.setInterval(() => {
-      if (window.scrollY !== 0) doScroll();
+      const appTop = appRef.current?.scrollTop ?? 0;
+      if (appTop !== 0 || window.scrollY !== 0) doScroll();
       attempts++;
       if (attempts >= 16) window.clearInterval(interval);
     }, 50);
@@ -136,7 +141,7 @@ export function App() {
 
   return (
     <>
-      <div className="app">
+      <div className="app" ref={appRef}>
         <div ref={topRef} aria-hidden style={{ position: 'absolute', top: 0, left: 0, height: 1, width: 1, pointerEvents: 'none' }} />
         <div className="brand">
           <img

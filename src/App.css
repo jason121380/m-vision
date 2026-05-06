@@ -17,10 +17,10 @@
 }
 
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body,#root{height:100%;font-family:-apple-system,BlinkMacSystemFont,'PingFang TC','Helvetica Neue',sans-serif;overflow-x:hidden;background:var(--bg);color:var(--ink)}
+html,body,#root{height:100%;font-family:-apple-system,BlinkMacSystemFont,'PingFang TC','Helvetica Neue',sans-serif;overflow:hidden;background:var(--bg);color:var(--ink)}
 html{scroll-padding-top:80px;scroll-behavior:auto!important}
 
-.app{position:relative;z-index:1;min-height:100vh;max-width:430px;margin:0 auto;padding-bottom:88px;background:var(--bg)}
+.app{position:relative;z-index:1;height:100vh;height:100dvh;max-width:430px;margin:0 auto;padding-bottom:88px;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;background:var(--bg)}
 
 /* === HEADER === */
 .brand{background:#fff;display:flex;align-items:center;justify-content:center;
