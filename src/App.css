@@ -275,17 +275,13 @@ html{scroll-padding-top:80px}
 
 /* === CAROUSEL === */
 .carousel-wrap{margin-top:0;animation:fadeUp .8s var(--ease) .15s both}
-.carousel{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;background:#1a1a1a}
-.carousel img,.carousel video,.carousel iframe{width:100%;height:100%;object-fit:cover;display:block}
+.carousel{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;background:#1a1a1a;pointer-events:none}
+.carousel img,.carousel video,.carousel iframe{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
 .carousel img{animation:kenBurns 12s ease-in-out infinite alternate}
 @keyframes kenBurns{
   from{transform:scale(1) translate(0,0)}
   to{transform:scale(1.08) translate(-1.5%,-1.5%)}
 }
-.carousel-dots{position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:center;gap:6px;z-index:2}
-.carousel-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.55);cursor:pointer;
-  transition:all .3s var(--ease)}
-.carousel-dot.active{width:24px;border-radius:4px;background:#fff}
 
 /* === PHOTOGRAPHER DESC + PORTFOLIO === */
 .pdesc{font-size:11px;color:var(--ink-soft);margin-top:5px;line-height:1.6;letter-spacing:.02em}
