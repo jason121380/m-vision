@@ -5,6 +5,7 @@ import { CONFIG_SHEET_CSV_URLS } from '../config';
 import type {
   AddonRow,
   AppConfig,
+  BookingRow,
   CameraRow,
   CamType,
   CeremonyRow,
@@ -98,7 +99,7 @@ export function useConfig() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [services, cameras, ceremonies, addons, photographers, settings, media] = await Promise.all([
+      const [services, cameras, ceremonies, addons, photographers, settings, media, bookings] = await Promise.all([
         fetchTab(CONFIG_SHEET_CSV_URLS.services),
         fetchTab(CONFIG_SHEET_CSV_URLS.cameras),
         fetchTab(CONFIG_SHEET_CSV_URLS.ceremonies),
@@ -106,6 +107,7 @@ export function useConfig() {
         fetchTab(CONFIG_SHEET_CSV_URLS.photographers),
         fetchTab(CONFIG_SHEET_CSV_URLS.settings),
         fetchTab(CONFIG_SHEET_CSV_URLS.media),
+        fetchTab(CONFIG_SHEET_CSV_URLS.bookings),
       ]);
       if (cancelled) return;
 
@@ -176,6 +178,20 @@ export function useConfig() {
               };
             }).filter((m) => m.url)
           : DEFAULT_CONFIG.media,
+        bookings: useRows(bookings, 'bookings')
+          ? bookings
+              .map<BookingRow>((r) => ({
+                date: (r.date ?? '').trim(),
+                videoSlots: num(r.videoSlots),
+                photoSlots: num(r.photoSlots),
+                videoCamsUsed: num(r.videoCamsUsed),
+                photoCamsUsed: num(r.photoCamsUsed),
+                videoLeads: (r.videoLeads ?? '').split(',').map((s) => s.trim()).filter(Boolean),
+                photoLeads: (r.photoLeads ?? '').split(',').map((s) => s.trim()).filter(Boolean),
+                notes: r.notes ?? '',
+              }))
+              .filter((b) => b.date)
+          : DEFAULT_CONFIG.bookings,
       };
 
       console.info('[config] loaded', {
@@ -186,6 +202,7 @@ export function useConfig() {
         photographers: next.photographers.length,
         settings: Object.keys(next.settings).length,
         media: next.media.length,
+        bookings: next.bookings.length,
       });
 
       setConfig(next);

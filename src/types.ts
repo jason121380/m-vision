@@ -21,6 +21,16 @@ export type MediaRow = {
   alt: string;
   poster: string;
 };
+export type BookingRow = {
+  date: string;             // YYYY-MM-DD
+  videoSlots: number;       // 0..2
+  photoSlots: number;       // 0..2
+  videoCamsUsed: number;    // 累計動態機位（人）
+  photoCamsUsed: number;    // 累計平面機位（人）
+  videoLeads: string[];     // 已被綁的動態主攝 key（陣列）
+  photoLeads: string[];     // 已被綁的平面主攝 key
+  notes: string;
+};
 
 export type AppConfig = {
   services: ServiceRow[];
@@ -30,6 +40,7 @@ export type AppConfig = {
   photographers: PhotographerRow[];
   settings: SettingsMap;
   media: MediaRow[];
+  bookings: BookingRow[];
 };
 
 export type ServiceKey = '' | 'video' | 'photo' | 'both';
