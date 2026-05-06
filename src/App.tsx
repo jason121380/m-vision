@@ -51,16 +51,37 @@ function validatePage(page: number, state: FormState): string[] {
 }
 
 
+type Theme = 'light' | 'dark';
+
+function getInitialTheme(): Theme {
+  if (typeof window === 'undefined') return 'light';
+  const saved = window.localStorage.getItem('mv-theme');
+  if (saved === 'light' || saved === 'dark') return saved;
+  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
 export function App() {
   const { config, loaded } = useConfig();
   const [state, setState] = useState<FormState>(initialState);
   const [page, setPage] = useState(1);
   const [modal, setModal] = useState<ModalState>({ type: 'none' });
+  const [theme, setTheme] = useState<Theme>(getInitialTheme);
   const topRef = useRef<HTMLDivElement>(null);
+  const appRef = useRef<HTMLDivElement>(null);
 
   // 阻擋瀏覽器 auto-restore scroll 位置
   useEffect(() => {
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  }, []);
+
+  // 套用主題到 root，並寫回 localStorage
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem('mv-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
   }, []);
 
   const update = useCallback((patch: Partial<FormState>) => {
@@ -71,11 +92,14 @@ export function App() {
     setState(initialState);
     setPage(1);
     setModal({ type: 'none' });
+    if (appRef.current) appRef.current.scrollTop = 0;
     window.scrollTo(0, 0);
   }, []);
 
   const doScroll = useCallback(() => {
-    // sentinel 元素 align top — 不依賴 scrollTop，跟 sticky/transform 並存最穩
+    // 主要 scroll container 是 .app（顯式 overflow-y:auto），這個一定要 reset
+    if (appRef.current) appRef.current.scrollTop = 0;
+    // 備援：若日後拿掉 .app 的 overflow 改回 body 滾動，這幾行仍能蓋住
     topRef.current?.scrollIntoView({ block: 'start' });
     window.scrollTo(0, 0);
     if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
@@ -123,7 +147,8 @@ export function App() {
     doScroll();
     let attempts = 0;
     const interval = window.setInterval(() => {
-      if (window.scrollY !== 0) doScroll();
+      const appTop = appRef.current?.scrollTop ?? 0;
+      if (appTop !== 0 || window.scrollY !== 0) doScroll();
       attempts++;
       if (attempts >= 16) window.clearInterval(interval);
     }, 50);
@@ -136,7 +161,7 @@ export function App() {
 
   return (
     <>
-      <div className="app">
+      <div className="app" ref={appRef}>
         <div ref={topRef} aria-hidden style={{ position: 'absolute', top: 0, left: 0, height: 1, width: 1, pointerEvents: 'none' }} />
         <div className="brand">
           <img
@@ -150,6 +175,23 @@ export function App() {
               img.src = '/logo.png';
             }}
           />
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={toggleTheme}
+            aria-label={theme === 'dark' ? '切換為日間模式' : '切換為夜間模式'}
+          >
+            {theme === 'dark' ? (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            )}
+          </button>
         </div>
 
         {page === 1 && config.media.length > 0 && (
