@@ -25,7 +25,7 @@ export function Page2({ state, update, config }: Props) {
     onSelect: () => void,
   ) => {
     const isAny = p.key === 'any';
-    const blocked = !isAny && photographerBlocked(config, dateKey, p.type, p.key);
+    const blocked = !isAny && photographerBlocked(config, dateKey, p.key);
     return (
       <div
         key={p.key}

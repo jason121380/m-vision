@@ -175,6 +175,7 @@ export function App() {
               img.src = '/logo.png';
             }}
           />
+          <div className="brand-name">{config.settings.company_name || 'M 視覺影像記錄公司'}</div>
           <button
             type="button"
             className="theme-toggle"
