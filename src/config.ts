@@ -30,7 +30,7 @@ export const CONFIG_SHEET_CSV_URLS = {
   addons: csv('839307070'),
   photographers: csv('641524689'),
   settings: csv('382208128'),
-  media: '',
+  media: csv('1783636320'),
 } as const;
 
 export type ConfigKey = keyof typeof CONFIG_SHEET_CSV_URLS;
