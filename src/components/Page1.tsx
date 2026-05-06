@@ -1,4 +1,4 @@
-import type { AppConfig, FormState, ServiceKey, TimeKey } from '../types';
+import type { AppConfig, FormState, ServiceKey } from '../types';
 
 type Props = {
   state: FormState;
@@ -18,9 +18,6 @@ export function Page1({ state, update, config }: Props) {
   const photoCams = config.cameras.filter((c) => c.type === 'photo');
   const videoCers = config.ceremonies.filter((c) => c.type === 'video');
   const photoCers = config.ceremonies.filter((c) => c.type === 'photo');
-
-  const videoPrice = config.services.find((s) => s.key === 'video')?.price ?? 0;
-  const photoPrice = config.services.find((s) => s.key === 'photo')?.price ?? 0;
 
   return (
     <div className="page active">
@@ -87,57 +84,6 @@ export function Page1({ state, update, config }: Props) {
       </div>
 
       {(isV || isP) && (
-        <div className="g2" style={{ marginTop: 18 }}>
-          {isV && (
-            <div>
-              <div className="col-h" style={{ marginBottom: 8 }}>
-                <div className="col-h-zh">錄 影</div>
-                <div className="col-h-en">Video recording</div>
-              </div>
-              <div className="card">
-                {(['lunch', 'dinner'] as const).map((t) => (
-                  <div
-                    key={t}
-                    className={optClass(state.vmTime === t)}
-                    onClick={() => update({ vmTime: t as TimeKey })}
-                  >
-                    <div className="rc">
-                      <div className="rd" />
-                    </div>
-                    <div className="opt-t" style={{ fontSize: 13 }}>{t === 'lunch' ? '午 宴' : '晚 宴'}</div>
-                    <div className="opt-p">{videoPrice.toLocaleString('zh-TW')}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {isP && (
-            <div className={onlyP ? 'col-right' : ''}>
-              <div className="col-h" style={{ marginBottom: 8 }}>
-                <div className="col-h-zh">拍 照</div>
-                <div className="col-h-en">Photography</div>
-              </div>
-              <div className="card">
-                {(['lunch', 'dinner'] as const).map((t) => (
-                  <div
-                    key={t}
-                    className={optClass(state.pmTime === t)}
-                    onClick={() => update({ pmTime: t as TimeKey })}
-                  >
-                    <div className="rc">
-                      <div className="rd" />
-                    </div>
-                    <div className="opt-t" style={{ fontSize: 13 }}>{t === 'lunch' ? '午 宴' : '晚 宴'}</div>
-                    <div className="opt-p">{photoPrice.toLocaleString('zh-TW')}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {(isV || isP) && (
         <div style={{ marginTop: 18 }}>
           <div className="col-header">
             {isV && (
@@ -166,8 +112,7 @@ export function Page1({ state, update, config }: Props) {
                       <div className="srd" />
                     </div>
                     <div className="sopt-t">
-                      {c.label} {c.price.toLocaleString('zh-TW')}元{' '}
-                      <span style={{ fontSize: 10, opacity: 0.5 }}>{c.note}</span>
+                      {c.label} {c.price.toLocaleString('zh-TW')}元
                     </div>
                   </div>
                 ))}
@@ -185,8 +130,7 @@ export function Page1({ state, update, config }: Props) {
                       <div className="srd" />
                     </div>
                     <div className="sopt-t">
-                      {c.label} {c.price.toLocaleString('zh-TW')}元{' '}
-                      <span style={{ fontSize: 10, opacity: 0.5 }}>{c.note}</span>
+                      {c.label} {c.price.toLocaleString('zh-TW')}元
                     </div>
                   </div>
                 ))}

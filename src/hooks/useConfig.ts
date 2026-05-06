@@ -8,6 +8,7 @@ import type {
   CameraRow,
   CamType,
   CeremonyRow,
+  MediaRow,
   PhotographerRow,
   ServiceRow,
   SettingsMap,
@@ -19,6 +20,42 @@ const num = (v: string | undefined): number => {
 };
 
 const ty = (v: string | undefined): CamType => (v === 'photo' ? 'photo' : 'video');
+
+const mediaTy = (v: string | undefined): 'image' | 'video' =>
+  v === 'video' ? 'video' : 'image';
+
+// 把 Drive 的分享連結 / 檔案 ID 轉成可在 <img> 直接吃的 thumbnail URL
+function normalizeMediaUrl(url: string, type: 'image' | 'video'): string {
+  if (!url) return url;
+  const trimmed = url.trim();
+
+  // 1. 純檔案 ID（25-44 字元的英數加底線/減號）
+  if (/^[\w-]{20,}$/.test(trimmed)) {
+    return type === 'video'
+      ? `https://drive.google.com/file/d/${trimmed}/preview`
+      : `https://drive.google.com/thumbnail?id=${trimmed}&sz=w1600`;
+  }
+
+  // 2. /file/d/{ID}/view 格式
+  const m1 = trimmed.match(/\/file\/d\/([\w-]+)/);
+  if (m1) {
+    const id = m1[1];
+    return type === 'video'
+      ? `https://drive.google.com/file/d/${id}/preview`
+      : `https://drive.google.com/thumbnail?id=${id}&sz=w1600`;
+  }
+
+  // 3. ?id=... 格式
+  const m2 = trimmed.match(/[?&]id=([\w-]+)/);
+  if (m2) {
+    const id = m2[1];
+    return type === 'video'
+      ? `https://drive.google.com/file/d/${id}/preview`
+      : `https://drive.google.com/thumbnail?id=${id}&sz=w1600`;
+  }
+
+  return trimmed;
+}
 
 async function fetchTab(url: string): Promise<Record<string, string>[] | null> {
   if (!url) return null;
@@ -40,13 +77,14 @@ export function useConfig() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [services, cameras, ceremonies, addons, photographers, settings] = await Promise.all([
+      const [services, cameras, ceremonies, addons, photographers, settings, media] = await Promise.all([
         fetchTab(CONFIG_SHEET_CSV_URLS.services),
         fetchTab(CONFIG_SHEET_CSV_URLS.cameras),
         fetchTab(CONFIG_SHEET_CSV_URLS.ceremonies),
         fetchTab(CONFIG_SHEET_CSV_URLS.addons),
         fetchTab(CONFIG_SHEET_CSV_URLS.photographers),
         fetchTab(CONFIG_SHEET_CSV_URLS.settings),
+        fetchTab(CONFIG_SHEET_CSV_URLS.media),
       ]);
       if (cancelled) return;
 
@@ -93,6 +131,8 @@ export function useConfig() {
               name: r.name,
               role: r.role ?? '',
               price: num(r.price),
+              photo: normalizeMediaUrl(r.photo ?? '', 'image'),
+              desc: r.desc ?? '',
             }))
           : DEFAULT_CONFIG.photographers,
         settings: useRows(settings, 'settings')
@@ -101,6 +141,17 @@ export function useConfig() {
               return acc;
             }, {})
           : DEFAULT_CONFIG.settings,
+        media: useRows(media, 'media')
+          ? media.map<MediaRow>((r) => {
+              const t = mediaTy(r.type);
+              return {
+                type: t,
+                url: normalizeMediaUrl(r.url ?? '', t),
+                alt: r.alt ?? '',
+                poster: normalizeMediaUrl(r.poster ?? '', 'image'),
+              };
+            }).filter((m) => m.url)
+          : DEFAULT_CONFIG.media,
       };
 
       console.info('[config] loaded', {
@@ -110,6 +161,7 @@ export function useConfig() {
         addons: next.addons.length,
         photographers: next.photographers.length,
         settings: Object.keys(next.settings).length,
+        media: next.media.length,
       });
 
       setConfig(next);
