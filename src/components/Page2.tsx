@@ -112,9 +112,9 @@ export function Page2({ state, update, config }: Props) {
       </div>
 
       {isV && (
-        <div style={{ marginTop: 20 }}>
-          <div className="col-h" style={{ marginBottom: 8 }}>
-            <div className="col-h-zh" style={{ fontSize: 13 }}>指定動態錄影師</div>
+        <div style={{ marginTop: 24 }}>
+          <div className="col-h" style={{ marginBottom: 10 }}>
+            <div className="col-h-zh" style={{ fontSize: 15 }}>指定動態錄影師</div>
           </div>
           <div className="pcard">
             {videoPhotographers.map((p) =>
@@ -124,9 +124,9 @@ export function Page2({ state, update, config }: Props) {
         </div>
       )}
       {isP && (
-        <div style={{ marginTop: 20 }}>
-          <div className="col-h" style={{ marginBottom: 8 }}>
-            <div className="col-h-zh" style={{ fontSize: 13 }}>指定平面攝影師</div>
+        <div style={{ marginTop: 24 }}>
+          <div className="col-h" style={{ marginBottom: 10 }}>
+            <div className="col-h-zh" style={{ fontSize: 15 }}>指定平面攝影師</div>
           </div>
           <div className="pcard">
             {photoPhotographers.map((p) =>
