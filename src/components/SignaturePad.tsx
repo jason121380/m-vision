@@ -32,7 +32,7 @@ export const SignaturePad = forwardRef<SignaturePadHandle, Props>(function Signa
       canvas.width = r.width * dpr;
       canvas.height = r.height * dpr;
       ctx.scale(dpr, dpr);
-      ctx.strokeStyle = 'rgba(200,190,255,0.9)';
+      ctx.strokeStyle = '#1a1a1a';
       ctx.lineWidth = 2;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
@@ -113,11 +113,12 @@ export const SignaturePad = forwardRef<SignaturePadHandle, Props>(function Signa
       ref={canvasRef}
       style={{
         width: '100%',
-        height: 160,
+        height: 180,
         display: 'block',
-        background: 'rgba(255,255,255,.04)',
-        border: '1.5px solid rgba(255,255,255,.18)',
-        borderRadius: 14,
+        background: '#fff',
+        border: '1.5px solid rgba(0,0,0,.2)',
+        borderRadius: 12,
+        boxShadow: '0 1px 3px rgba(0,0,0,.04)',
         touchAction: 'none',
         cursor: 'crosshair',
       }}

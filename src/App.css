@@ -2,7 +2,7 @@
 html,body,#root{height:100%;font-family:-apple-system,BlinkMacSystemFont,'PingFang TC','Helvetica Neue',sans-serif;overflow-x:hidden;background:#fafaf8;color:#1a1a1a}
 html{scroll-padding-top:80px}
 
-.app{position:relative;z-index:1;min-height:100vh;max-width:430px;margin:0 auto;padding-bottom:24px;background:#fafaf8}
+.app{position:relative;z-index:1;min-height:100vh;max-width:430px;margin:0 auto;padding-bottom:80px;background:#fafaf8}
 
 .brand{background:#fff;display:flex;align-items:center;justify-content:center;
   padding:10px 20px;border-bottom:1px solid rgba(0,0,0,.06);
@@ -175,7 +175,10 @@ html{scroll-padding-top:80px}
 .note{font-size:11px;color:rgba(0,0,0,.45);text-align:center;padding:8px 12px;
   line-height:1.7;letter-spacing:.03em}
 
-.bnav{padding:18px 20px 10px;display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+.bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;
+  padding:12px 20px calc(14px + env(safe-area-inset-bottom));display:flex;justify-content:space-between;align-items:center;
+  z-index:200;background:linear-gradient(to top, #fafaf8 75%, rgba(250,250,248,0));
+  border-top:1px solid rgba(0,0,0,.05)}
 .btn-nav{background:#fff;border:1px solid rgba(0,0,0,.18);
   color:#333;font-size:14px;letter-spacing:.1em;padding:10px 22px;
   border-radius:8px;font-family:inherit;cursor:pointer;transition:all .2s}
