@@ -133,6 +133,7 @@ export function useConfig() {
               price: num(r.price),
               photo: normalizeMediaUrl(r.photo ?? '', 'image'),
               desc: r.desc ?? '',
+              portfolio: (r.portfolio ?? '').trim(),
             }))
           : DEFAULT_CONFIG.photographers,
         settings: useRows(settings, 'settings')

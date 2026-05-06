@@ -209,3 +209,10 @@ html,body,#root{height:100%;font-family:-apple-system,BlinkMacSystemFont,'PingFa
 /* Photographer description */
 .pdesc{font-size:10px;color:rgba(255,255,255,.5);margin-top:4px;line-height:1.5;letter-spacing:.02em}
 .popt.sel .pdesc{color:rgba(255,255,255,.7)}
+
+.pportfolio{display:inline-block;margin-top:6px;padding:3px 8px;font-size:10px;
+  color:rgba(200,185,255,.9);background:rgba(110,90,200,.18);
+  border:1px solid rgba(160,140,255,.35);border-radius:6px;
+  text-decoration:none;letter-spacing:.05em;transition:all .15s}
+.pportfolio:active{background:rgba(110,90,200,.35)}
+.popt.sel .pportfolio{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.35);color:#fff}

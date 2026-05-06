@@ -65,6 +65,17 @@ export function Page2({ state, update, config }: Props) {
             </div>
           )}
           {!isAny && p.desc && <div className="pdesc">{p.desc}</div>}
+          {!isAny && p.portfolio && (
+            <a
+              className="pportfolio"
+              href={p.portfolio}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+            >
+              查看作品集 ↗
+            </a>
+          )}
         </div>
       </div>
     );
