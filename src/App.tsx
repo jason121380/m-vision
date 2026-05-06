@@ -131,16 +131,17 @@ export function App() {
       <StarsBackground />
       <div className="app">
         <div className="brand">
-          {config.settings.logo ? (
-            <img
-              src={config.settings.logo}
-              alt={config.settings.company_name ?? 'logo'}
-              className="brand-logo"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <span className="brand-text">{config.settings.company_name ?? 'M 視覺影像記錄公司'}</span>
-          )}
+          <img
+            src={config.settings.logo || '/logo.png'}
+            alt={config.settings.company_name ?? 'M 視覺影像記錄公司'}
+            className="brand-logo"
+            referrerPolicy="no-referrer"
+            onError={(e) => {
+              const img = e.currentTarget;
+              if (img.src.endsWith('/logo.png')) return;
+              img.src = '/logo.png';
+            }}
+          />
         </div>
         <Steps current={page} total={TOTAL_PAGES} />
 
