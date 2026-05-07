@@ -85,10 +85,16 @@ function findSheetLoose(ss, name) {
 
 function doPost(e) {
   try {
+    Logger.log('[doPost] v2 start (with bookings sync)');
     if (!RESPONSE_SHEET_ID) {
       throw new Error('RESPONSE_SHEET_ID 尚未設定');
     }
     var data = JSON.parse(e.postData.contents);
+    Logger.log('[doPost] payload keys: ' + Object.keys(data).join(',') +
+               ' / eventDate=' + data.eventDate +
+               ' / svc=' + data.svc +
+               ' / vpKey=' + data.vpKey + ' / ppKey=' + data.ppKey +
+               ' / vCams=' + data.vCams + ' / pCams=' + data.pCams);
 
     // 1. 上傳 PDF 到 Drive 資料夾，拿公開連結
     var pdfUrl = '';
@@ -162,21 +168,34 @@ function init() {
  *  - vpKey / ppKey 為空字串或 'any' 不寫進 leads
  */
 function updateBookingsTab(data) {
-  if (!SETTINGS_SHEET_ID) return; // 沒填就跳過
+  if (!SETTINGS_SHEET_ID) {
+    Logger.log('[bookings] skipped: SETTINGS_SHEET_ID is empty');
+    return;
+  }
 
   var date = String(data.eventDate || '').trim();
-  if (!date) return;
+  if (!date) {
+    Logger.log('[bookings] skipped: empty eventDate');
+    return;
+  }
 
   var svc = String(data.svc || '');
   var addV = svc === 'video' || svc === 'both';
   var addP = svc === 'photo' || svc === 'both';
-  if (!addV && !addP) return;
+  if (!addV && !addP) {
+    Logger.log('[bookings] skipped: unknown svc=' + svc);
+    return;
+  }
 
+  Logger.log('[bookings] open settings sheet ' + SETTINGS_SHEET_ID + ' / date=' + date + ' / svc=' + svc);
   var ss = SpreadsheetApp.openById(SETTINGS_SHEET_ID);
   var sh = findSheetLoose(ss, BOOKINGS_SHEET_NAME);
   if (!sh) {
+    Logger.log('[bookings] tab not found, creating "' + BOOKINGS_SHEET_NAME + '"');
     sh = ss.insertSheet(BOOKINGS_SHEET_NAME);
     sh.appendRow(BOOKINGS_COLUMNS);
+  } else {
+    Logger.log('[bookings] using tab "' + sh.getName() + '"');
   }
   if (sh.getLastRow() === 0) {
     sh.appendRow(BOOKINGS_COLUMNS);
@@ -202,7 +221,6 @@ function updateBookingsTab(data) {
   if (pKey === 'any') pKey = '';
 
   if (rowIdx < 0) {
-    // 新檔期 → append 一列
     var newRow = [
       date,
       addV ? 1 : 0,
@@ -214,10 +232,10 @@ function updateBookingsTab(data) {
       ''
     ];
     sh.appendRow(newRow);
+    Logger.log('[bookings] appended new row: ' + JSON.stringify(newRow));
     return;
   }
 
-  // 既有檔期 → 增量更新
   var range = sh.getRange(rowIdx, 1, 1, BOOKINGS_COLUMNS.length);
   var row = range.getValues()[0];
   var nz = function (v) { var n = Number(v); return isNaN(n) ? 0 : n; };
@@ -238,4 +256,5 @@ function updateBookingsTab(data) {
     row[6] = mergeLeads(row[6], pKey);
   }
   range.setValues([row]);
+  Logger.log('[bookings] updated row ' + rowIdx + ': ' + JSON.stringify(row));
 }
