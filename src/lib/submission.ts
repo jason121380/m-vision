@@ -1,5 +1,6 @@
 import { SUBMISSION_ENDPOINT_URL } from '../config';
 import { buildSummary, computeTotal, fmtMoney } from './pricing';
+import { cameraCount } from './bookings';
 import type { PdfResult } from './pdf';
 import type { AppConfig, FormState } from '../types';
 
@@ -29,6 +30,12 @@ export type SubmissionPayload = {
   signature: string;
   pdfBase64: string;
   pdfFilename: string;
+  // bookings 分頁更新所需的原始資料（Apps Script 用）
+  svc: string;
+  vpKey: string;
+  ppKey: string;
+  vCams: number;
+  pCams: number;
 };
 
 export function buildPayload(state: FormState, config: AppConfig, pdf?: PdfResult): SubmissionPayload {
@@ -42,6 +49,9 @@ export function buildPayload(state: FormState, config: AppConfig, pdf?: PdfResul
       ? `${state.year}-${state.month.padStart(2, '0')}-${state.day.padStart(2, '0')}`
       : '';
   const wt = state.wt === 'lunch' ? '午宴' : state.wt === 'dinner' ? '晚宴' : '';
+
+  const vCamLabel = config.cameras.find((c) => c.type === 'video' && c.key === state.vcKey)?.label ?? '';
+  const pCamLabel = config.cameras.find((c) => c.type === 'photo' && c.key === state.pcKey)?.label ?? '';
 
   return {
     submittedAt: new Date().toISOString(),
@@ -62,6 +72,11 @@ export function buildPayload(state: FormState, config: AppConfig, pdf?: PdfResul
     signature: state.signature,
     pdfBase64: pdf?.base64 ?? '',
     pdfFilename: pdf?.filename ?? '',
+    svc: state.svc,
+    vpKey: state.vpKey,
+    ppKey: state.ppKey,
+    vCams: cameraCount(vCamLabel),
+    pCams: cameraCount(pCamLabel),
   };
 }
 

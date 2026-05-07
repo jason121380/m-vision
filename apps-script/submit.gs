@@ -28,8 +28,26 @@ var RESPONSE_SHEET_ID = '1wMqpUncxpn-j_TxXr27UJsovOc4EaiDvRRCAM239Qtc';
 // === 必填：契約 PDF 要存到的 Drive 資料夾 ID ===
 var PDF_FOLDER_ID = '1os5QkoQ3x1Mzp0vcE45brJ9ICscQyCqd';
 
+// === 必填：設定 Sheet 的 ID（前端讀取 photographers / bookings 等的那份）===
+//   開該份 Sheet → 網址 /d/ 跟 /edit 之間那段亂碼貼進來。
+//   留空字串就不會更新 bookings 分頁。
+var SETTINGS_SHEET_ID = '';
+
 // 接收表單回覆要寫到的分頁名稱（沒有就會自動建立）
 var RESPONSE_SHEET_NAME = 'responses';
+
+// 設定 Sheet 裡面 bookings 分頁的名稱（前端 useConfig 讀的就是這個分頁）
+var BOOKINGS_SHEET_NAME = 'bookings';
+var BOOKINGS_COLUMNS = [
+  'date',
+  'videoSlots',
+  'photoSlots',
+  'videoCamsUsed',
+  'photoCamsUsed',
+  'videoLeads',
+  'photoLeads',
+  'notes'
+];
 
 // 寫進 Sheet 的欄位順序（第一列是 header）
 var COLUMNS = [
@@ -51,6 +69,19 @@ var COLUMNS = [
   'pdfUrl',
   'signature'
 ];
+
+// 找分頁：先用完全相符的名稱，找不到再退回「名稱包含關鍵字」（case-insensitive）。
+// 這樣使用者把 tab 重命名成「預約 bookings」「bookings 預約」「📅 bookings」之類也找得到。
+function findSheetLoose(ss, name) {
+  var exact = ss.getSheetByName(name);
+  if (exact) return exact;
+  var needle = String(name).toLowerCase();
+  var sheets = ss.getSheets();
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].getName().toLowerCase().indexOf(needle) !== -1) return sheets[i];
+  }
+  return null;
+}
 
 function doPost(e) {
   try {
@@ -78,7 +109,7 @@ function doPost(e) {
 
     // 2. 寫入 Sheet
     var ss = SpreadsheetApp.openById(RESPONSE_SHEET_ID);
-    var sheet = ss.getSheetByName(RESPONSE_SHEET_NAME);
+    var sheet = findSheetLoose(ss, RESPONSE_SHEET_NAME);
     if (!sheet) {
       sheet = ss.insertSheet(RESPONSE_SHEET_NAME);
       sheet.appendRow(COLUMNS);
@@ -88,6 +119,14 @@ function doPost(e) {
     }
     var row = COLUMNS.map(function (k) { return data[k] != null ? data[k] : ''; });
     sheet.appendRow(row);
+
+    // 3. 同步更新「設定 Sheet」的 bookings 分頁，讓前端下次讀 CSV 時看到新檔期
+    //    任何錯誤都不阻擋表單寫入流程
+    try {
+      updateBookingsTab(data);
+    } catch (bookErr) {
+      Logger.log('updateBookingsTab failed: ' + bookErr);
+    }
 
     return ContentService
       .createTextOutput(JSON.stringify({ ok: true, pdfUrl: pdfUrl }))
@@ -104,7 +143,99 @@ function init() {
   if (RESPONSE_SHEET_ID) {
     SpreadsheetApp.openById(RESPONSE_SHEET_ID).getName();
   }
+  if (SETTINGS_SHEET_ID) {
+    SpreadsheetApp.openById(SETTINGS_SHEET_ID).getName();
+  }
   if (PDF_FOLDER_ID) {
     DriveApp.getFolderById(PDF_FOLDER_ID).getName();
   }
+}
+
+/**
+ * 把這次送出的訂單彙整到 設定 Sheet 的 bookings 分頁。
+ *
+ * 規則：
+ *  - 用 eventDate（YYYY-MM-DD）找該日 row
+ *  - 找不到 → 直接 append 一列（依 BOOKINGS_COLUMNS 順序）
+ *  - 找得到 → 增量更新 slots / camsUsed，leads 用逗號串接（已有就不重複）
+ *  - service = 'video' 只動 video 三欄；'photo' 只動 photo 三欄；'both' 兩邊都動
+ *  - vpKey / ppKey 為空字串或 'any' 不寫進 leads
+ */
+function updateBookingsTab(data) {
+  if (!SETTINGS_SHEET_ID) return; // 沒填就跳過
+
+  var date = String(data.eventDate || '').trim();
+  if (!date) return;
+
+  var svc = String(data.svc || '');
+  var addV = svc === 'video' || svc === 'both';
+  var addP = svc === 'photo' || svc === 'both';
+  if (!addV && !addP) return;
+
+  var ss = SpreadsheetApp.openById(SETTINGS_SHEET_ID);
+  var sh = findSheetLoose(ss, BOOKINGS_SHEET_NAME);
+  if (!sh) {
+    sh = ss.insertSheet(BOOKINGS_SHEET_NAME);
+    sh.appendRow(BOOKINGS_COLUMNS);
+  }
+  if (sh.getLastRow() === 0) {
+    sh.appendRow(BOOKINGS_COLUMNS);
+  }
+
+  var lastRow = sh.getLastRow();
+  var rowIdx = -1;
+  if (lastRow >= 2) {
+    var dates = sh.getRange(2, 1, lastRow - 1, 1).getValues();
+    for (var i = 0; i < dates.length; i++) {
+      if (String(dates[i][0]).trim() === date) {
+        rowIdx = i + 2;
+        break;
+      }
+    }
+  }
+
+  var vCams = Number(data.vCams || 0) || 0;
+  var pCams = Number(data.pCams || 0) || 0;
+  var vKey = String(data.vpKey || '').trim();
+  var pKey = String(data.ppKey || '').trim();
+  if (vKey === 'any') vKey = '';
+  if (pKey === 'any') pKey = '';
+
+  if (rowIdx < 0) {
+    // 新檔期 → append 一列
+    var newRow = [
+      date,
+      addV ? 1 : 0,
+      addP ? 1 : 0,
+      addV ? vCams : 0,
+      addP ? pCams : 0,
+      addV ? vKey : '',
+      addP ? pKey : '',
+      ''
+    ];
+    sh.appendRow(newRow);
+    return;
+  }
+
+  // 既有檔期 → 增量更新
+  var range = sh.getRange(rowIdx, 1, 1, BOOKINGS_COLUMNS.length);
+  var row = range.getValues()[0];
+  var nz = function (v) { var n = Number(v); return isNaN(n) ? 0 : n; };
+  var mergeLeads = function (existing, key) {
+    var arr = String(existing || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+    if (key && arr.indexOf(key) === -1) arr.push(key);
+    return arr.join(',');
+  };
+
+  if (addV) {
+    row[1] = nz(row[1]) + 1;
+    row[3] = nz(row[3]) + vCams;
+    row[5] = mergeLeads(row[5], vKey);
+  }
+  if (addP) {
+    row[2] = nz(row[2]) + 1;
+    row[4] = nz(row[4]) + pCams;
+    row[6] = mergeLeads(row[6], pKey);
+  }
+  range.setValues([row]);
 }
