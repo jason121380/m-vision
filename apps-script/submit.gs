@@ -70,6 +70,19 @@ var COLUMNS = [
   'signature'
 ];
 
+// 找分頁：先用完全相符的名稱，找不到再退回「名稱包含關鍵字」（case-insensitive）。
+// 這樣使用者把 tab 重命名成「預約 bookings」「bookings 預約」「📅 bookings」之類也找得到。
+function findSheetLoose(ss, name) {
+  var exact = ss.getSheetByName(name);
+  if (exact) return exact;
+  var needle = String(name).toLowerCase();
+  var sheets = ss.getSheets();
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].getName().toLowerCase().indexOf(needle) !== -1) return sheets[i];
+  }
+  return null;
+}
+
 function doPost(e) {
   try {
     if (!RESPONSE_SHEET_ID) {
@@ -96,7 +109,7 @@ function doPost(e) {
 
     // 2. 寫入 Sheet
     var ss = SpreadsheetApp.openById(RESPONSE_SHEET_ID);
-    var sheet = ss.getSheetByName(RESPONSE_SHEET_NAME);
+    var sheet = findSheetLoose(ss, RESPONSE_SHEET_NAME);
     if (!sheet) {
       sheet = ss.insertSheet(RESPONSE_SHEET_NAME);
       sheet.appendRow(COLUMNS);
@@ -160,7 +173,7 @@ function updateBookingsTab(data) {
   if (!addV && !addP) return;
 
   var ss = SpreadsheetApp.openById(SETTINGS_SHEET_ID);
-  var sh = ss.getSheetByName(BOOKINGS_SHEET_NAME);
+  var sh = findSheetLoose(ss, BOOKINGS_SHEET_NAME);
   if (!sh) {
     sh = ss.insertSheet(BOOKINGS_SHEET_NAME);
     sh.appendRow(BOOKINGS_COLUMNS);
