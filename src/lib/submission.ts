@@ -11,6 +11,16 @@ const resolveAddr = (mode: string, addr: string, hotel: string, restaurant: stri
   return addr;
 };
 
+// 回傳台北時區（UTC+8）的 'YYYY-MM-DD HH:mm:ss'，給 Sheet 直接讀
+function nowTaipei(): string {
+  const tw = new Date(Date.now() + 8 * 60 * 60 * 1000);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return (
+    `${tw.getUTCFullYear()}-${pad(tw.getUTCMonth() + 1)}-${pad(tw.getUTCDate())} ` +
+    `${pad(tw.getUTCHours())}:${pad(tw.getUTCMinutes())}:${pad(tw.getUTCSeconds())}`
+  );
+}
+
 export type SubmissionPayload = {
   submittedAt: string;
   groom: string;
@@ -54,7 +64,7 @@ export function buildPayload(state: FormState, config: AppConfig, pdf?: PdfResul
   const pCamLabel = config.cameras.find((c) => c.type === 'photo' && c.key === state.pcKey)?.label ?? '';
 
   return {
-    submittedAt: new Date().toISOString(),
+    submittedAt: nowTaipei(),
     groom: state.groom,
     bride: state.bride,
     phone: state.phone,
