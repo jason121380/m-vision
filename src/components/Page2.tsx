@@ -65,7 +65,7 @@ export function Page2({ state, update, config }: Props) {
         )}
         <div className="pinfo">
           <div className="pname">
-            {isAny ? `0元 — ${p.name}` : p.name}
+            {p.name}
             {blocked && <span className="badge-full">當日已排檔</span>}
           </div>
           {!isAny && (
