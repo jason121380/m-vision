@@ -1,0 +1,6 @@
+{
+  "node_version": "20",
+  "build_command": "npm ci && npm run build",
+  "start_command": "node --import tsx/esm src/index.ts",
+  "install_command": "npm ci"
+}
