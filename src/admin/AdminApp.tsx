@@ -8,7 +8,6 @@ import type {
   AddonRow,
   CameraRow,
   CeremonyRow,
-  MediaRow,
   PhotographerRow,
   ServiceRow,
   SettingRow,
@@ -26,7 +25,6 @@ const TABS = [
   { key: 'ceremonies', label: '儀式' },
   { key: 'addons', label: '加選項目' },
   { key: 'photographers', label: '攝影師' },
-  { key: 'media', label: '輪播媒體' },
   { key: 'bookings', label: '檔期' },
   { key: 'submissions', label: '送單紀錄' },
 ] as const;
@@ -59,22 +57,28 @@ export function AdminApp() {
     if (importing) return;
     if (!confirm('從 Google Sheet 匯入會「整張覆蓋」目前資料（bookings 是 upsert 不會清空），後台手動修改的內容會被覆蓋。確定要繼續？')) return;
     setImporting(true);
-    const res = await api.post<{ counts: Record<string, number> }>('/api/admin/import-sheet', {});
+    const res = await api.post<{
+      counts: Record<string, number>;
+      skipped: string[];
+      errors: Record<string, string>;
+    }>('/api/admin/import-sheet', {});
     setImporting(false);
     if (res.ok) {
-      const c = res.data.counts;
-      alert(
-        `匯入完成\n\n` +
-          `services: ${c.services}\n` +
-          `cameras: ${c.cameras}\n` +
-          `ceremonies: ${c.ceremonies}\n` +
-          `addons: ${c.addons}\n` +
-          `photographers: ${c.photographers}\n` +
-          `media: ${c.media}\n` +
-          `settings: ${c.settings}\n` +
-          `bookings: ${c.bookings}\n\n` +
-          `重新載入頁面以顯示新資料。`,
-      );
+      const { counts, skipped, errors } = res.data;
+      const lines: string[] = ['匯入完成', ''];
+      const order = ['services', 'cameras', 'ceremonies', 'addons', 'photographers', 'settings', 'bookings'];
+      for (const k of order) {
+        if (counts[k] != null) lines.push(`${k}: ${counts[k]}`);
+      }
+      if (skipped.length > 0) {
+        lines.push('', '以下分頁抓取失敗，已跳過（既有資料保留）：');
+        for (const k of skipped) {
+          lines.push(`  - ${k}: ${errors[k] ?? 'unknown'}`);
+        }
+        lines.push('', '請確認 Sheet 該分頁有「發佈到網路 → CSV」。');
+      }
+      lines.push('', '重新載入頁面以顯示新資料。');
+      alert(lines.join('\n'));
       window.location.reload();
     } else {
       alert(`匯入失敗：${res.error}`);
@@ -272,22 +276,6 @@ function Section({ tab }: { tab: TabKey }) {
           { key: 'portfolio', label: '作品集 URL', type: 'text' },
         ]}
         blank={() => ({ type: 'video', key: '', name: '', role: '', price: 1000, photo: '', desc: '', portfolio: '' })}
-      />
-    );
-  }
-  if (tab === 'media') {
-    return (
-      <Editor<MediaRow>
-        title="輪播媒體 media"
-        hint="image 或 video。url 可貼 Drive / YouTube / 直接 URL。poster 可選（影片預覽圖）。"
-        path="media"
-        columns={[
-          { key: 'type', label: 'Type', type: 'enum', options: ['image', 'video'], width: '12%' },
-          { key: 'url', label: 'URL', type: 'text' },
-          { key: 'alt', label: '替代文字', type: 'text' },
-          { key: 'poster', label: 'Poster URL', type: 'text' },
-        ]}
-        blank={() => ({ type: 'image', url: '', alt: '', poster: '' })}
       />
     );
   }

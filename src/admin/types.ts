@@ -31,14 +31,6 @@ export type PhotographerRow = {
   portfolio: string;
   sortOrder?: number;
 };
-export type MediaRow = {
-  id?: number;
-  type: 'image' | 'video';
-  url: string;
-  alt: string;
-  poster: string;
-  sortOrder?: number;
-};
 export type SettingRow = { key: string; value: string };
 export type BookingRow = {
   id?: number;

@@ -8,7 +8,6 @@ import type {
   BookingRow,
   CameraRow,
   CeremonyRow,
-  MediaRow,
   PhotographerRow,
   ServiceRow,
   SettingsMap,
@@ -18,7 +17,6 @@ export const adminRoutes = new Hono();
 adminRoutes.use('*', requireAdmin);
 
 const camTypeEnum = z.enum(['video', 'photo']);
-const mediaTypeEnum = z.enum(['image', 'video']);
 
 const servicesSchema = z.array(
   z.object({ key: z.string().min(1), label: z.string().min(1), price: z.number().int() }),
@@ -55,14 +53,6 @@ const photographersSchema = z.array(
     portfolio: z.string().optional().default(''),
   }),
 );
-const mediaSchema = z.array(
-  z.object({
-    type: mediaTypeEnum,
-    url: z.string().min(1),
-    alt: z.string().optional().default(''),
-    poster: z.string().optional().default(''),
-  }),
-);
 const settingsSchema = z.array(
   z.object({ key: z.string().min(1), value: z.string().optional().default('') }),
 );
@@ -84,7 +74,6 @@ adminRoutes.get('/cameras', async (c) => c.json((await read()).cameras));
 adminRoutes.get('/ceremonies', async (c) => c.json((await read()).ceremonies));
 adminRoutes.get('/addons', async (c) => c.json((await read()).addons));
 adminRoutes.get('/photographers', async (c) => c.json((await read()).photographers));
-adminRoutes.get('/media', async (c) => c.json((await read()).media));
 adminRoutes.get('/settings', async (c) => {
   const d = await read();
   return c.json(Object.entries(d.settings).map(([key, value]) => ({ key, value })));
@@ -150,16 +139,6 @@ adminRoutes.put('/photographers', async (c) => {
   return c.json({ ok: true });
 });
 
-adminRoutes.put('/media', async (c) => {
-  const body = await c.req.json();
-  const parsed = mediaSchema.safeParse(body);
-  if (!parsed.success) return c.json({ error: 'bad payload', issues: parsed.error.issues }, 400);
-  await update((d) => {
-    d.media = parsed.data as MediaRow[];
-  });
-  return c.json({ ok: true });
-});
-
 adminRoutes.put('/settings', async (c) => {
   const body = await c.req.json();
   const parsed = settingsSchema.safeParse(body);
@@ -215,10 +194,11 @@ adminRoutes.delete('/bookings/:id', async (c) => {
 });
 
 // 從 Google Sheet 公開 CSV 整張覆蓋（bookings 是 upsert）
+// 任何分頁抓不到都會跳過，不會擋其他分頁繼續寫入
 adminRoutes.post('/import-sheet', async (c) => {
   try {
-    const counts = await importFromSheet();
-    return c.json({ ok: true, counts });
+    const result = await importFromSheet();
+    return c.json({ ok: true, ...result });
   } catch (err) {
     return c.json({ error: err instanceof Error ? err.message : String(err) }, 500);
   }

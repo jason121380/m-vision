@@ -23,6 +23,7 @@ const CSV_BASE =
 
 const csv = (gid: string) => `${CSV_BASE}?gid=${gid}&single=true&output=csv`;
 
+// media 不從 Sheet 拿，前端寫死 /banner.mp4（src/lib/defaults.ts）
 export const CONFIG_SHEET_CSV_URLS = {
   services: csv('0'),
   cameras: csv('799839686'),
@@ -30,7 +31,6 @@ export const CONFIG_SHEET_CSV_URLS = {
   addons: csv('839307070'),
   photographers: csv('641524689'),
   settings: csv('382208128'),
-  media: csv('1783636320'),
   bookings: csv('770609893'),
 } as const;
 
