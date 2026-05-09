@@ -2,7 +2,6 @@
 // 存進 JSON 檔的形狀就是這幾個 type。
 
 export type CamType = 'video' | 'photo';
-export type MediaType = 'image' | 'video';
 
 export type ServiceRow = { key: string; label: string; price: number };
 export type CameraRow = { type: CamType; key: string; label: string; price: number; note: string };
@@ -18,7 +17,6 @@ export type PhotographerRow = {
   desc: string;
   portfolio: string;
 };
-export type MediaRow = { type: MediaType; url: string; alt: string; poster: string };
 export type SettingsMap = Record<string, string>;
 export type BookingRow = {
   date: string;
@@ -60,7 +58,6 @@ export type DataShape = {
   ceremonies: CeremonyRow[];
   addons: AddonRow[];
   photographers: PhotographerRow[];
-  media: MediaRow[];
   settings: SettingsMap;
   bookings: BookingRow[];
   submissions: SubmissionRow[];

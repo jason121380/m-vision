@@ -12,7 +12,6 @@ publicRoutes.get('/config', async (c) => {
     ceremonies: d.ceremonies,
     addons: d.addons,
     photographers: d.photographers,
-    media: d.media,
     settings: d.settings,
     bookings: d.bookings,
   });
@@ -52,21 +51,31 @@ publicRoutes.post('/booking', async (c) => {
 
   // 1. PDF 上傳到 Drive（透過現有 Apps Script），server 不存 PDF
   let pdfUrl = '';
-  if (data.pdfBase64 && process.env.PDF_UPLOAD_ENDPOINT) {
+  if (!data.pdfBase64) {
+    console.warn('[booking] no pdfBase64 in payload, skipping PDF upload');
+  } else if (!process.env.PDF_UPLOAD_ENDPOINT) {
+    console.warn('[booking] PDF_UPLOAD_ENDPOINT not set, skipping PDF upload');
+  } else {
     try {
       const res = await fetch(process.env.PDF_UPLOAD_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
-          action: 'pdfOnly',
           pdfBase64: data.pdfBase64,
           pdfFilename: data.pdfFilename,
         }),
       });
-      const json = (await res.json().catch(() => null)) as { pdfUrl?: string } | null;
-      if (json?.pdfUrl) pdfUrl = json.pdfUrl;
-    } catch {
-      // PDF 失敗不擋送單
+      const json = (await res.json().catch(() => null)) as
+        | { pdfUrl?: string; ok?: boolean; error?: string }
+        | null;
+      if (json?.pdfUrl) {
+        pdfUrl = json.pdfUrl;
+        console.info('[booking] PDF uploaded:', pdfUrl);
+      } else {
+        console.warn('[booking] PDF upload returned no url, body=', json);
+      }
+    } catch (err) {
+      console.warn('[booking] PDF upload threw:', err);
     }
   }
 

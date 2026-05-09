@@ -17,7 +17,7 @@ export function SubmissionsView() {
 
   return (
     <div>
-      <h2>送單紀錄 submissions</h2>
+      <h2>收單紀錄 submissions</h2>
       <p className="admin-hint">最近 200 筆，由新到舊。pdfUrl 點開可下載契約 PDF。</p>
       {loading && <div className="admin-status">載入中…</div>}
       {err && <div className="admin-status err">{err}</div>}
@@ -25,7 +25,7 @@ export function SubmissionsView() {
         <table className="adt">
           <thead>
             <tr>
-              <th>送單時間</th>
+              <th>收單時間</th>
               <th>新人</th>
               <th>電話</th>
               <th>場次日期</th>
@@ -38,7 +38,7 @@ export function SubmissionsView() {
           <tbody>
             {rows.length === 0 && (
               <tr>
-                <td colSpan={8} className="adt-empty">尚無送單</td>
+                <td colSpan={8} className="adt-empty">尚無收單</td>
               </tr>
             )}
             {rows.map((s) => (

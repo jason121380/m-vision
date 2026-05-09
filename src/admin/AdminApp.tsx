@@ -25,11 +25,10 @@ const SETTINGS_SUBTABS = [
   { key: 'ceremonies', label: '儀式' },
   { key: 'addons', label: '加選項目' },
   { key: 'photographers', label: '攝影師' },
-  { key: 'bookings', label: '檔期' },
 ] as const;
 
 type SettingsTabKey = (typeof SETTINGS_SUBTABS)[number]['key'];
-type TabKey = SettingsTabKey | 'submissions';
+type TabKey = SettingsTabKey | 'bookings' | 'submissions';
 
 export function AdminApp() {
   const [auth, setAuth] = useState<AuthState>({ status: 'checking' });
@@ -137,10 +136,16 @@ export function AdminApp() {
             </button>
           ))}
           <button
+            className={tab === 'bookings' ? 'active' : ''}
+            onClick={() => setTab('bookings')}
+          >
+            預約檔期
+          </button>
+          <button
             className={tab === 'submissions' ? 'active' : ''}
             onClick={() => setTab('submissions')}
           >
-            送單紀錄
+            收單紀錄
           </button>
         </div>
         <div className="admin-content">
