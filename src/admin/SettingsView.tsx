@@ -22,7 +22,6 @@ const FIELDS: FieldDef[] = [
   { key: 'account', label: '銀行帳號', type: 'text' },
   { key: 'deposit', label: '訂金金額（元）', type: 'number' },
   { key: 'court', label: '管轄法院', type: 'text', placeholder: '台灣彰化地方法院' },
-  { key: 'logo', label: 'Logo 圖片網址', type: 'text', placeholder: '/logo.jpg 或 Drive 分享連結', hint: '空白時用預設 logo' },
   { key: 'max_video_slots_per_day', label: '每日動態組數上限', type: 'number', hint: '當天接到這數字後行事曆會把那一天動態擋掉' },
   { key: 'max_photo_slots_per_day', label: '每日平面組數上限', type: 'number', hint: '當天接到這數字後行事曆會把那一天平面擋掉' },
   { key: 'max_video_cameras_per_day', label: '每日動態總機位上限', type: 'number', hint: '多組相加；超過後機位選項會灰' },

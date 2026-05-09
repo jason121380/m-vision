@@ -32,6 +32,7 @@
 .admin-status.ok{color:#3a8a3a}
 .admin-status.err{color:#a13a3a}
 
+.adt-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--r-md)}
 .adt{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;background:var(--bg-card);border-radius:var(--r-md);overflow:hidden;border:1px solid var(--line)}
 .adt th{text-align:left;padding:10px 12px;background:var(--accent-soft);color:var(--ink);font-weight:600;font-size:12px;letter-spacing:.06em;border-bottom:1px solid var(--line);white-space:nowrap}
 .adt td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
@@ -126,11 +127,40 @@
 .admin-link:hover{text-decoration:none}
 
 @media (max-width: 700px) {
+  .admin-top{padding:10px 14px;gap:8px}
+  .admin-top-right{gap:6px;font-size:12px}
+  .admin-top-right > span{display:none} /* 隱藏 username 省空間 */
+  .admin-top-right .admin-btn{padding:6px 10px;font-size:12px}
+  .admin-link{padding:6px 10px}
+  .admin-brand{gap:8px}
+  .admin-brand-name{font-size:12px;letter-spacing:.06em}
+
   .admin-body{grid-template-columns:1fr;grid-template-rows:auto 1fr}
   .admin-side{border-right:none;border-bottom:1px solid var(--line);display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;padding:8px;white-space:nowrap}
   .admin-side button{width:auto;flex-shrink:0;padding:8px 12px}
   .admin-side button.admin-side-group{display:none}
   .admin-side button.admin-side-sub{padding-left:12px;font-size:14px}
   .admin-side button.admin-side-sub.hidden-sub{display:inline-block}
-  .admin-content{padding:16px}
+  .admin-content{padding:16px 14px}
+  .admin-content h2{font-size:18px;margin-bottom:4px}
+  .admin-hint{font-size:12px;line-height:1.55}
+
+  /* 表格在窄螢幕橫向捲，table 自己保持 max-content 寬度 */
+  .adt-wrap{border:1px solid var(--line);border-radius:var(--r-md)}
+  .adt{border:none;border-radius:0;min-width:max-content;font-size:12px}
+  .adt th,.adt td{padding:6px 8px}
+  .adt input[type=text],.adt input[type=number],.adt textarea,.adt select{font-size:12.5px;padding:6px 8px}
+
+  /* 收單細節展開 grid 改單欄 */
+  .adt-detail-grid{grid-template-columns:1fr;gap:14px}
+
+  /* Modal 在 mobile 撐滿視窗 */
+  .adm-modal{padding:8px}
+  .adm-modal-box{max-height:96vh}
+  .adm-field-row{grid-template-columns:1fr}
+}
+
+@media (max-width: 480px) {
+  .admin-brand-name{display:none}
+  .admin-link{display:none} /* 「查看客人預約頁面」太佔空間，改用瀏覽器網址列即可 */
 }

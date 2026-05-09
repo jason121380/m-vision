@@ -58,6 +58,7 @@ export function EditableTable<T extends Record<string, unknown>>({
 
   return (
     <Fragment>
+      <div className="adt-wrap">
       <table className="adt">
         <thead>
           <tr>
@@ -146,6 +147,7 @@ export function EditableTable<T extends Record<string, unknown>>({
           ))}
         </tbody>
       </table>
+      </div>
       {!noAdd && (
         <div style={{ marginTop: 12 }}>
           <button className="admin-btn" onClick={add}>+ 新增一列</button>

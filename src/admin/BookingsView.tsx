@@ -138,6 +138,7 @@ export function BookingsView() {
       </div>
       {loading && <div className="admin-status">載入中…</div>}
       {!loading && (
+        <div className="adt-wrap">
         <table className="adt">
           <thead>
             <tr>
@@ -181,6 +182,7 @@ export function BookingsView() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
 
       <Modal

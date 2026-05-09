@@ -47,6 +47,7 @@ export function SubmissionsView() {
       {loading && <div className="admin-status">載入中…</div>}
       {err && <div className="admin-status err">{err}</div>}
       {!loading && (
+        <div className="adt-wrap">
         <table className="adt">
           <thead>
             <tr>
@@ -113,6 +114,7 @@ export function SubmissionsView() {
             })}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );
