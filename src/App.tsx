@@ -150,7 +150,7 @@ export function App() {
         <div ref={topRef} aria-hidden style={{ position: 'absolute', top: 0, left: 0, height: 1, width: 1, pointerEvents: 'none' }} />
         <div className="brand">
           <img
-            src={config.settings.logo || '/logo.jpg'}
+            src={config.settings.logo || '/black.jpg'}
             alt={config.settings.company_name ?? 'M 視覺影像記錄公司'}
             className="brand-logo"
             referrerPolicy="no-referrer"
