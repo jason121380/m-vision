@@ -55,15 +55,27 @@ export function BookingsView() {
     [photographers],
   );
 
-  const nameOf = (list: PhotographerRow[], key: string): string => {
-    const p = list.find((x) => x.key === key);
-    return p ? p.name : key;
-  };
-
-  const renderLeads = (type: 'video' | 'photo', leads: string[]): string => {
-    if (leads.length === 0) return '—';
+  const renderLeads = (type: 'video' | 'photo', leads: string[]) => {
+    if (leads.length === 0) return <span>—</span>;
     const list = type === 'video' ? videoPpl : photoPpl;
-    return leads.map((k) => nameOf(list, k)).join('、');
+    return (
+      <div className="bk-leads">
+        {leads.map((k) => {
+          const p = list.find((x) => x.key === k);
+          const name = p ? p.name : k;
+          return (
+            <span className="bk-lead" key={k}>
+              {p?.photo ? (
+                <img className="bk-avatar" src={p.photo} alt={name} referrerPolicy="no-referrer" />
+              ) : (
+                <span className="bk-avatar bk-avatar-fallback">{name.slice(0, 1)}</span>
+              )}
+              <span>{name}</span>
+            </span>
+          );
+        })}
+      </div>
+    );
   };
 
   const removeRow = async (id: number) => {
@@ -237,6 +249,11 @@ export function BookingsView() {
                           checked={on}
                           onChange={() => toggleLead('video', p.key)}
                         />
+                        {p.photo ? (
+                          <img className="bk-avatar-sm" src={p.photo} alt={p.name} referrerPolicy="no-referrer" />
+                        ) : (
+                          <span className="bk-avatar-sm bk-avatar-fallback">{p.name.slice(0, 1)}</span>
+                        )}
                         {p.name}
                         {p.role && <span className="adm-checkbox-role">（{p.role}）</span>}
                       </label>
@@ -283,6 +300,11 @@ export function BookingsView() {
                           checked={on}
                           onChange={() => toggleLead('photo', p.key)}
                         />
+                        {p.photo ? (
+                          <img className="bk-avatar-sm" src={p.photo} alt={p.name} referrerPolicy="no-referrer" />
+                        ) : (
+                          <span className="bk-avatar-sm bk-avatar-fallback">{p.name.slice(0, 1)}</span>
+                        )}
                         {p.name}
                         {p.role && <span className="adm-checkbox-role">（{p.role}）</span>}
                       </label>
