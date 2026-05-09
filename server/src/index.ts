@@ -58,5 +58,6 @@ app.notFound(async (c) => {
 });
 
 const port = Number(process.env.PORT ?? 3001);
-serve({ fetch: app.fetch, port });
-console.log(`[m-vision-server] listening on :${port}, static=${STATIC_DIR}`);
+const hostname = process.env.HOSTNAME ?? '0.0.0.0';
+serve({ fetch: app.fetch, port, hostname });
+console.log(`[m-vision-server] listening on ${hostname}:${port}, static=${STATIC_DIR}`);
