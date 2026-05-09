@@ -38,18 +38,28 @@ app.route('/api/admin', adminRoutes);
 const STATIC_DIR = process.env.STATIC_DIR ?? '../dist';
 app.use('/*', serveStatic({ root: STATIC_DIR }));
 
-let indexHtml: string | null = null;
-async function getIndexHtml(): Promise<string> {
-  if (indexHtml) return indexHtml;
+let publicHtml: string | null = null;
+let adminHtml: string | null = null;
+
+async function loadHtml(): Promise<{ pub: string; admin: string }> {
+  if (publicHtml && adminHtml) return { pub: publicHtml, admin: adminHtml };
   const path = resolve(process.cwd(), STATIC_DIR, 'index.html');
-  indexHtml = await readFile(path, 'utf-8');
-  return indexHtml;
+  const raw = await readFile(path, 'utf-8');
+  publicHtml = raw;
+  // /admin* 用 admin.webmanifest（start_url=/admin），加到主畫面才會直接落 /admin
+  adminHtml = raw
+    .replace('/manifest.webmanifest', '/admin.webmanifest')
+    .replace('content="M 視覺"', 'content="M 視覺後台"')
+    .replace('<title>M 視覺影像記錄公司</title>', '<title>M 視覺後台</title>')
+    .replace(/href="\/logo\.jpg"/g, 'href="/black.jpg"');
+  return { pub: publicHtml, admin: adminHtml };
 }
+
 app.notFound(async (c) => {
   if (c.req.path.startsWith('/api/')) return c.json({ error: 'not found' }, 404);
   try {
-    const html = await getIndexHtml();
-    return c.html(html);
+    const { pub, admin } = await loadHtml();
+    return c.html(c.req.path.startsWith('/admin') ? admin : pub);
   } catch {
     return c.text('frontend not built — run `npm run build` at repo root first', 500);
   }
