@@ -13,8 +13,11 @@ const GIDS = {
   bookings: '770609893',
 } as const;
 
-const BASE = process.env.SHEET_CSV_BASE;
-if (!BASE) throw new Error('SHEET_CSV_BASE 未設定');
+// Sheet 的 publish-to-web 連結是 public 的，直接寫死當 fallback。
+// 要從別份 Sheet 倒就 export SHEET_CSV_BASE=... 蓋過。
+const DEFAULT_BASE =
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vTFQckgyvf1EHhsOPeI8X1SPsaqQTert9W53cOfeTHy3TkGseK1bfzI4jn7euXKS5CGlgYxJ18Ml2I-/pub';
+const BASE = process.env.SHEET_CSV_BASE ?? DEFAULT_BASE;
 
 function csvUrl(gid: string): string {
   return `${BASE}?gid=${gid}&single=true&output=csv`;
