@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { EditableTable, type ColumnSpec } from './EditableTable';
+import { Modal } from './Modal';
 
 type Props<T extends Record<string, unknown>> = {
   title: string;
@@ -15,6 +16,10 @@ type Props<T extends Record<string, unknown>> = {
   pickRows?: (raw: unknown) => T[];
   /** 寫回前的 cleanup（移除 sortOrder=0 的 placeholder 等） */
   serialize?: (rows: T[]) => unknown;
+  /** 用 modal 取代 EditableTable 內建的「+ 新增一列」內聯模式 */
+  modalAdd?: boolean;
+  /** Modal 標題前綴（modalAdd 才用），例如「新增攝影師」 */
+  addLabel?: string;
 };
 
 export function Editor<T extends Record<string, unknown>>({
@@ -26,6 +31,8 @@ export function Editor<T extends Record<string, unknown>>({
   blank,
   pickRows,
   serialize,
+  modalAdd,
+  addLabel,
 }: Props<T>) {
   const [rows, setRows] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +41,7 @@ export function Editor<T extends Record<string, unknown>>({
     kind: 'idle',
     msg: '',
   });
+  const [draft, setDraft] = useState<T | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -68,6 +76,17 @@ export function Editor<T extends Record<string, unknown>>({
     }
   };
 
+  const openAdd = () => setDraft(blank());
+  const closeAdd = () => setDraft(null);
+  const confirmAdd = () => {
+    if (!draft) return;
+    setRows([...rows, draft]);
+    setDraft(null);
+  };
+  const patchDraft = (key: keyof T, val: unknown) => {
+    setDraft((d) => (d ? ({ ...d, [key]: val } as T) : d));
+  };
+
   return (
     <div>
       <h2>{title}</h2>
@@ -76,14 +95,74 @@ export function Editor<T extends Record<string, unknown>>({
         <button className="admin-btn primary" onClick={save} disabled={saving || loading}>
           {saving ? '儲存中…' : '儲存'}
         </button>
+        {modalAdd && (
+          <button className="admin-btn" onClick={openAdd} disabled={loading}>
+            + {addLabel ?? '新增'}
+          </button>
+        )}
         {loading && <span className="admin-status">載入中…</span>}
         {!loading && status.kind !== 'idle' && (
           <span className={`admin-status ${status.kind}`}>{status.msg}</span>
         )}
       </div>
       {!loading && (
-        <EditableTable rows={rows} setRows={setRows} columns={columns} blank={blank} />
+        <EditableTable
+          rows={rows}
+          setRows={setRows}
+          columns={columns}
+          blank={blank}
+          noAdd={modalAdd}
+        />
       )}
+
+      <Modal
+        open={!!draft}
+        title={addLabel ?? `新增 ${title}`}
+        onClose={closeAdd}
+        footer={
+          <>
+            <button className="admin-btn" onClick={closeAdd}>取消</button>
+            <button className="admin-btn primary" onClick={confirmAdd}>新增</button>
+          </>
+        }
+      >
+        {draft && columns.map((col) => {
+          const val = draft[col.key];
+          return (
+            <div className="adm-field" key={String(col.key)}>
+              <label>{col.label}</label>
+              {col.type === 'enum' ? (
+                <select
+                  value={String(val ?? '')}
+                  onChange={(e) => patchDraft(col.key, e.target.value)}
+                >
+                  {(col.options ?? []).map((o) => (
+                    <option key={o} value={o}>{o}</option>
+                  ))}
+                </select>
+              ) : col.type === 'number' ? (
+                <input
+                  type="number"
+                  value={Number(val ?? 0)}
+                  onChange={(e) => patchDraft(col.key, Number(e.target.value))}
+                />
+              ) : col.type === 'longtext' ? (
+                <textarea
+                  rows={3}
+                  value={String(val ?? '')}
+                  onChange={(e) => patchDraft(col.key, e.target.value)}
+                />
+              ) : (
+                <input
+                  type="text"
+                  value={String(val ?? '')}
+                  onChange={(e) => patchDraft(col.key, e.target.value)}
+                />
+              )}
+            </div>
+          );
+        })}
+      </Modal>
     </div>
   );
 }

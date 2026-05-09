@@ -203,3 +203,77 @@ adminRoutes.post('/import-sheet', async (c) => {
     return c.json({ error: err instanceof Error ? err.message : String(err) }, 500);
   }
 });
+
+// 刪除一筆收單，並反向還原該筆對 bookings 的累加（slots / camsUsed / leads）
+adminRoutes.delete('/submissions/:id', async (c) => {
+  const id = Number(c.req.param('id'));
+  let removed = false;
+  await update((d) => {
+    const idx = d.submissions.findIndex((s) => s.id === id);
+    if (idx < 0) return;
+    const sub = d.submissions[idx]!;
+    const raw = (sub.raw ?? {}) as {
+      svc?: 'video' | 'photo' | 'both';
+      vpKey?: string;
+      ppKey?: string;
+      vCams?: number;
+      pCams?: number;
+    };
+    const eventDate = sub.eventDate || '';
+
+    if (eventDate) {
+      const bkIdx = d.bookings.findIndex((b) => b.date === eventDate);
+      if (bkIdx >= 0) {
+        const bk = d.bookings[bkIdx]!;
+        const addV = raw.svc === 'video' || raw.svc === 'both';
+        const addP = raw.svc === 'photo' || raw.svc === 'both';
+
+        if (addV) {
+          bk.videoSlots = Math.max(0, bk.videoSlots - 1);
+          bk.videoCamsUsed = Math.max(0, bk.videoCamsUsed - (raw.vCams ?? 0));
+          const vKey = raw.vpKey === 'any' ? '' : (raw.vpKey ?? '');
+          if (vKey) {
+            // 同一天若還有別筆送單也綁這個 lead，就不拔
+            const stillUsed = d.submissions.some((s, i) => {
+              if (i === idx) return false;
+              if (s.eventDate !== eventDate) return false;
+              return ((s.raw ?? {}) as { vpKey?: string }).vpKey === vKey;
+            });
+            if (!stillUsed) bk.videoLeads = bk.videoLeads.filter((k) => k !== vKey);
+          }
+        }
+        if (addP) {
+          bk.photoSlots = Math.max(0, bk.photoSlots - 1);
+          bk.photoCamsUsed = Math.max(0, bk.photoCamsUsed - (raw.pCams ?? 0));
+          const pKey = raw.ppKey === 'any' ? '' : (raw.ppKey ?? '');
+          if (pKey) {
+            const stillUsed = d.submissions.some((s, i) => {
+              if (i === idx) return false;
+              if (s.eventDate !== eventDate) return false;
+              return ((s.raw ?? {}) as { ppKey?: string }).ppKey === pKey;
+            });
+            if (!stillUsed) bk.photoLeads = bk.photoLeads.filter((k) => k !== pKey);
+          }
+        }
+
+        // booking 歸零且沒備註 → 移掉這個日期，避免 0/0/0 殘留
+        if (
+          bk.videoSlots === 0 &&
+          bk.photoSlots === 0 &&
+          bk.videoCamsUsed === 0 &&
+          bk.photoCamsUsed === 0 &&
+          bk.videoLeads.length === 0 &&
+          bk.photoLeads.length === 0 &&
+          !bk.notes
+        ) {
+          d.bookings.splice(bkIdx, 1);
+        }
+      }
+    }
+
+    d.submissions.splice(idx, 1);
+    removed = true;
+  });
+  if (!removed) return c.json({ error: 'not found' }, 404);
+  return c.json({ ok: true });
+});

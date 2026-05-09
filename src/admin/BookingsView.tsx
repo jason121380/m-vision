@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import { Modal } from './Modal';
 import type { BookingRow } from './types';
 
 type Draft = Omit<BookingRow, 'id'>;
@@ -78,16 +79,16 @@ export function BookingsView() {
 
   return (
     <div>
-      <h2>預約檔期 bookings</h2>
+      <h2>預約檔期</h2>
       <p className="admin-hint">
-        客人送單後會自動寫入這裡。每一列代表一個日期，slots 是當天動態 / 平面場次數，camsUsed 是機位數累計，leads 是已綁主攝（key 用逗號分隔）。可以手動新增或刪除。
+        每一列代表「某一天的預約佔用情況」。客戶送單會自動累加進來，你也可以手動新增（例如老闆自己有檔期要先擋住的日子）。
+        欄位意義：動態 / 平面場次（當天接了幾組）、動態 / 平面機位（多組合計幾台機）、動態 / 平面主攝（已被綁住的攝影師 key，逗號分隔）。
+        當這些數字達到「基本資料」裡 max_*_per_day 的上限，前台行事曆 / 機位 / 攝影師會自動變灰。想擋整天 → 把 slots 填到上限；想擋某攝影師 → 把他的 key 加到 leads。
       </p>
       <div className="admin-toolbar">
-        {!draft && (
-          <button className="admin-btn primary" onClick={() => setDraft(blankDraft())}>
-            + 新增檔期
-          </button>
-        )}
+        <button className="admin-btn primary" onClick={() => setDraft(blankDraft())}>
+          + 新增檔期
+        </button>
         {err && <span className="admin-status err">{err}</span>}
       </div>
       {loading && <div className="admin-status">載入中…</div>}
@@ -107,88 +108,7 @@ export function BookingsView() {
             </tr>
           </thead>
           <tbody>
-            {draft && (
-              <tr>
-                <td>
-                  <input
-                    type="date"
-                    value={draft.date}
-                    onChange={(e) => patchDraft({ date: e.target.value })}
-                  />
-                </td>
-                <td>
-                  <input
-                    type="number"
-                    min={0}
-                    value={draft.videoSlots}
-                    onChange={(e) => patchDraft({ videoSlots: Number(e.target.value) })}
-                  />
-                </td>
-                <td>
-                  <input
-                    type="number"
-                    min={0}
-                    value={draft.videoCamsUsed}
-                    onChange={(e) => patchDraft({ videoCamsUsed: Number(e.target.value) })}
-                  />
-                </td>
-                <td>
-                  <input
-                    type="text"
-                    value={draft.videoLeads.join(',')}
-                    placeholder="逗號分隔"
-                    onChange={(e) => patchDraft({ videoLeads: splitLeads(e.target.value) })}
-                  />
-                </td>
-                <td>
-                  <input
-                    type="number"
-                    min={0}
-                    value={draft.photoSlots}
-                    onChange={(e) => patchDraft({ photoSlots: Number(e.target.value) })}
-                  />
-                </td>
-                <td>
-                  <input
-                    type="number"
-                    min={0}
-                    value={draft.photoCamsUsed}
-                    onChange={(e) => patchDraft({ photoCamsUsed: Number(e.target.value) })}
-                  />
-                </td>
-                <td>
-                  <input
-                    type="text"
-                    value={draft.photoLeads.join(',')}
-                    placeholder="逗號分隔"
-                    onChange={(e) => patchDraft({ photoLeads: splitLeads(e.target.value) })}
-                  />
-                </td>
-                <td>
-                  <input
-                    type="text"
-                    value={draft.notes}
-                    onChange={(e) => patchDraft({ notes: e.target.value })}
-                  />
-                </td>
-                <td className="actions">
-                  <button className="admin-btn primary" onClick={saveDraft} disabled={saving}>
-                    {saving ? '...' : '儲存'}
-                  </button>
-                  <button
-                    className="admin-btn"
-                    onClick={() => {
-                      setDraft(null);
-                      setErr('');
-                    }}
-                    disabled={saving}
-                  >
-                    取消
-                  </button>
-                </td>
-              </tr>
-            )}
-            {rows.length === 0 && !draft && (
+            {rows.length === 0 && (
               <tr>
                 <td colSpan={9} className="adt-empty">尚無檔期</td>
               </tr>
@@ -217,6 +137,111 @@ export function BookingsView() {
           </tbody>
         </table>
       )}
+
+      <Modal
+        open={!!draft}
+        title="新增檔期"
+        onClose={() => {
+          setDraft(null);
+          setErr('');
+        }}
+        footer={
+          <>
+            <button
+              className="admin-btn"
+              onClick={() => {
+                setDraft(null);
+                setErr('');
+              }}
+              disabled={saving}
+            >
+              取消
+            </button>
+            <button className="admin-btn primary" onClick={saveDraft} disabled={saving}>
+              {saving ? '儲存中…' : '新增'}
+            </button>
+          </>
+        }
+      >
+        {draft && (
+          <>
+            <div className="adm-field">
+              <label>日期</label>
+              <input
+                type="date"
+                value={draft.date}
+                onChange={(e) => patchDraft({ date: e.target.value })}
+              />
+            </div>
+            <div className="adm-field-row">
+              <div className="adm-field">
+                <label>動態場次</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={draft.videoSlots}
+                  onChange={(e) => patchDraft({ videoSlots: Number(e.target.value) })}
+                />
+              </div>
+              <div className="adm-field">
+                <label>動態機位</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={draft.videoCamsUsed}
+                  onChange={(e) => patchDraft({ videoCamsUsed: Number(e.target.value) })}
+                />
+              </div>
+            </div>
+            <div className="adm-field">
+              <label>動態主攝（key 逗號分隔）</label>
+              <input
+                type="text"
+                value={draft.videoLeads.join(',')}
+                placeholder="例如：le, jb"
+                onChange={(e) => patchDraft({ videoLeads: splitLeads(e.target.value) })}
+              />
+            </div>
+            <div className="adm-field-row">
+              <div className="adm-field">
+                <label>平面場次</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={draft.photoSlots}
+                  onChange={(e) => patchDraft({ photoSlots: Number(e.target.value) })}
+                />
+              </div>
+              <div className="adm-field">
+                <label>平面機位</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={draft.photoCamsUsed}
+                  onChange={(e) => patchDraft({ photoCamsUsed: Number(e.target.value) })}
+                />
+              </div>
+            </div>
+            <div className="adm-field">
+              <label>平面主攝（key 逗號分隔）</label>
+              <input
+                type="text"
+                value={draft.photoLeads.join(',')}
+                placeholder="例如：ryan, zhh"
+                onChange={(e) => patchDraft({ photoLeads: splitLeads(e.target.value) })}
+              />
+            </div>
+            <div className="adm-field">
+              <label>備註</label>
+              <input
+                type="text"
+                value={draft.notes}
+                onChange={(e) => patchDraft({ notes: e.target.value })}
+              />
+            </div>
+          </>
+        )}
+      </Modal>
     </div>
   );
 }
