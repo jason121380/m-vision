@@ -64,16 +64,19 @@ export function AdminApp() {
   return (
     <div className="admin">
       <div className="admin-top">
-        <img
-          src="/black.jpg"
-          alt="M VISION"
-          className="admin-logo"
-          onError={(e) => {
-            const img = e.currentTarget;
-            if (img.src.endsWith('/logo.jpg')) return;
-            img.src = '/logo.jpg';
-          }}
-        />
+        <div className="admin-brand">
+          <img
+            src="/black.jpg"
+            alt="M VISION"
+            className="admin-logo"
+            onError={(e) => {
+              const img = e.currentTarget;
+              if (img.src.endsWith('/logo.jpg')) return;
+              img.src = '/logo.jpg';
+            }}
+          />
+          <span className="admin-brand-name">M 視覺影像記錄公司</span>
+        </div>
         <div className="admin-top-right">
           <span>{auth.user.username}</span>
           <button className="admin-btn" onClick={onLogout}>登出</button>
