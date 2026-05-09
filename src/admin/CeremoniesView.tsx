@@ -94,6 +94,7 @@ export function CeremoniesView() {
       {!loading && SECTIONS.map((s) => (
         <div key={s.type} style={{ marginBottom: 24 }}>
           <h3 className="adm-section-h">{s.label}</h3>
+          <div className="adt-wrap">
           <table className="adt">
             <thead>
               <tr>
@@ -128,6 +129,7 @@ export function CeremoniesView() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       ))}
     </div>

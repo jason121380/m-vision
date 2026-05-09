@@ -68,6 +68,7 @@ export function ServicesView() {
         )}
       </div>
       {!loading && (
+        <div className="adt-wrap">
         <table className="adt">
           <thead>
             <tr>
@@ -104,6 +105,7 @@ export function ServicesView() {
             })}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );
