@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { DEFAULT_CONFIG } from '../lib/defaults';
+import { HARDCODED_MEDIA } from '../lib/defaults';
 import { apiFetch } from '../lib/api';
 import type {
   AddonRow,
@@ -80,8 +80,19 @@ type ConfigResponse = {
   bookings: BookingRow[];
 };
 
+const EMPTY_CONFIG: AppConfig = {
+  services: [],
+  cameras: [],
+  ceremonies: [],
+  addons: [],
+  photographers: [],
+  media: HARDCODED_MEDIA,
+  settings: {},
+  bookings: [],
+};
+
 export function useConfig() {
-  const [config, setConfig] = useState<AppConfig>(DEFAULT_CONFIG);
+  const [config, setConfig] = useState<AppConfig>(EMPTY_CONFIG);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -91,34 +102,31 @@ export function useConfig() {
       if (cancelled) return;
 
       if (!res.ok) {
-        console.warn('[config] /api/config failed → using defaults:', res.error);
-        setConfig(DEFAULT_CONFIG);
+        console.warn('[config] /api/config failed:', res.error);
+        // 不假裝有資料；保持 empty config，UI 自己判斷是否能用
+        setConfig(EMPTY_CONFIG);
         setLoaded(true);
         return;
       }
 
       const d = res.data;
       const next: AppConfig = {
-        services: d.services?.length ? d.services : DEFAULT_CONFIG.services,
-        cameras: d.cameras?.length ? d.cameras : DEFAULT_CONFIG.cameras,
-        ceremonies: d.ceremonies?.length ? d.ceremonies : DEFAULT_CONFIG.ceremonies,
-        addons: d.addons?.length ? d.addons : DEFAULT_CONFIG.addons,
-        photographers: d.photographers?.length
-          ? d.photographers.map<PhotographerRow>((p) => ({
-              ...p,
-              photo: normalizeMediaUrl(p.photo ?? '', 'image'),
-              portfolio: (p.portfolio ?? '').trim(),
-            }))
-          : DEFAULT_CONFIG.photographers,
-        // media 寫死在 defaults.ts，不從後端讀
-        media: DEFAULT_CONFIG.media,
-        settings:
-          d.settings && Object.keys(d.settings).length
-            ? Object.entries(d.settings).reduce<SettingsMap>((acc, [k, v]) => {
-                acc[k] = k === 'logo' ? normalizeMediaUrl(v, 'image') : v;
-                return acc;
-              }, {})
-            : DEFAULT_CONFIG.settings,
+        services: d.services ?? [],
+        cameras: d.cameras ?? [],
+        ceremonies: d.ceremonies ?? [],
+        addons: d.addons ?? [],
+        photographers: (d.photographers ?? []).map<PhotographerRow>((p) => ({
+          ...p,
+          photo: normalizeMediaUrl(p.photo ?? '', 'image'),
+          portfolio: (p.portfolio ?? '').trim(),
+        })),
+        media: HARDCODED_MEDIA,
+        settings: d.settings
+          ? Object.entries(d.settings).reduce<SettingsMap>((acc, [k, v]) => {
+              acc[k] = k === 'logo' ? normalizeMediaUrl(v, 'image') : v;
+              return acc;
+            }, {})
+          : {},
         bookings: d.bookings ?? [],
       };
 
