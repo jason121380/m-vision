@@ -1,4 +1,5 @@
 import { Fragment } from 'react';
+import { TrashIcon } from './TrashIcon';
 
 export type ColumnSpec<T> = {
   key: keyof T;
@@ -150,9 +151,11 @@ export function EditableTable<T extends Record<string, unknown>>({
                     <span className="adt-locked-tag">必要</span>
                   ) : (
                     <>
-                      <button className="move" onClick={() => move(idx, -1)} disabled={idx === 0}>↑</button>
-                      <button className="move" onClick={() => move(idx, +1)} disabled={idx === rows.length - 1}>↓</button>
-                      <button className="row-del" onClick={() => remove(idx)}>刪</button>
+                      <button className="move" onClick={() => move(idx, -1)} disabled={idx === 0} aria-label="往上">↑</button>
+                      <button className="move" onClick={() => move(idx, +1)} disabled={idx === rows.length - 1} aria-label="往下">↓</button>
+                      <button className="row-del" onClick={() => remove(idx)} aria-label="刪除" title="刪除">
+                        <TrashIcon />
+                      </button>
                     </>
                   )}
                 </td>

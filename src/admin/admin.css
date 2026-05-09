@@ -41,8 +41,10 @@
 .adt input:focus,.adt textarea:focus,.adt select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
 .adt textarea{resize:vertical;min-height:32px;font-family:inherit}
 .adt td.actions{width:80px;text-align:right;white-space:nowrap}
-.adt .row-del{padding:5px 10px;font-size:11px;color:#a13a3a;background:transparent;border:1px solid rgba(193,87,87,.3);border-radius:6px;cursor:pointer;font-family:inherit}
+.adt .row-del{padding:6px 8px;color:#a13a3a;background:transparent;border:1px solid rgba(193,87,87,.3);border-radius:6px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;line-height:0;transition:background .15s,opacity .15s}
 .adt .row-del:hover{background:rgba(193,87,87,.1)}
+.adt .row-del:disabled{opacity:.45;cursor:wait}
+.adt .row-del svg{display:block}
 .adt .move{padding:3px 7px;font-size:11px;color:var(--ink-muted);background:transparent;border:1px solid var(--line-strong);border-radius:5px;cursor:pointer;font-family:inherit;margin-right:3px}
 .adt .move:hover{color:var(--accent);border-color:var(--accent)}
 .adt .move:disabled{opacity:.3;cursor:not-allowed}

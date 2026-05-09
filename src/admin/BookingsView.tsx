@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
 import { Avatar } from './Avatar';
 import { Modal } from './Modal';
+import { TrashIcon } from './TrashIcon';
 import type { BookingRow, PhotographerRow } from './types';
 
 type Draft = Omit<BookingRow, 'id'>;
@@ -174,8 +175,10 @@ export function BookingsView() {
                     className="row-del"
                     onClick={() => removeRow(b.id!)}
                     disabled={busyId === b.id}
+                    aria-label="刪除"
+                    title="刪除"
                   >
-                    {busyId === b.id ? '...' : '刪'}
+                    <TrashIcon />
                   </button>
                 </td>
               </tr>
