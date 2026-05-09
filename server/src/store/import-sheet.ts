@@ -1,6 +1,7 @@
 import { update } from './storage.ts';
 import type { SettingsMap } from './types.ts';
 
+// media 不從 Sheet 拿，前端寫死 /banner.mp4（src/lib/defaults.ts）
 const GIDS = {
   services: '0',
   cameras: '799839686',
@@ -8,7 +9,6 @@ const GIDS = {
   addons: '839307070',
   photographers: '641524689',
   settings: '382208128',
-  media: '1783636320',
   bookings: '770609893',
 } as const;
 
@@ -70,7 +70,6 @@ const num = (v: string | undefined): number => {
   return Number.isFinite(n) ? n : 0;
 };
 const ty = (v: string | undefined): 'video' | 'photo' => (v === 'photo' ? 'photo' : 'video');
-const mediaTy = (v: string | undefined): 'image' | 'video' => (v === 'video' ? 'video' : 'image');
 
 export type ImportResult = {
   counts: Partial<Record<TabKey, number>>;
@@ -148,16 +147,6 @@ export async function importFromSheet(base?: string): Promise<ImportResult> {
         portfolio: r.portfolio ?? '',
       }));
     }
-    if (fetched.media) {
-      d.media = fetched.media
-        .filter((r) => (r.url ?? '').trim() !== '')
-        .map((r) => ({
-          type: mediaTy(r.type),
-          url: r.url ?? '',
-          alt: r.alt ?? '',
-          poster: r.poster ?? '',
-        }));
-    }
     if (fetched.settings) {
       const next: SettingsMap = {};
       for (const r of fetched.settings) {
@@ -204,7 +193,6 @@ export async function importFromSheet(base?: string): Promise<ImportResult> {
   if (fetched.ceremonies) counts.ceremonies = fetched.ceremonies.length;
   if (fetched.addons) counts.addons = fetched.addons.length;
   if (fetched.photographers) counts.photographers = fetched.photographers.length;
-  if (fetched.media) counts.media = fetched.media.filter((r) => (r.url ?? '').trim() !== '').length;
   if (fetched.settings) counts.settings = fetched.settings.filter((r) => !!r.key).length;
   if (fetched.bookings) counts.bookings = fetched.bookings.length;
 

@@ -9,7 +9,6 @@ import type {
   CameraRow,
   CamType,
   CeremonyRow,
-  MediaRow,
   PhotographerRow,
   ServiceRow,
   SettingsMap,
@@ -21,9 +20,6 @@ const num = (v: string | undefined): number => {
 };
 
 const ty = (v: string | undefined): CamType => (v === 'photo' ? 'photo' : 'video');
-
-const mediaTy = (v: string | undefined): 'image' | 'video' =>
-  v === 'video' ? 'video' : 'image';
 
 // 把 Drive 的分享連結 / 檔案 ID / YouTube URL 轉成前端能直接吃的 URL
 function normalizeMediaUrl(url: string, type: 'image' | 'video'): string {
@@ -103,14 +99,13 @@ export function useConfig() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [services, cameras, ceremonies, addons, photographers, settings, media, bookings] = await Promise.all([
+      const [services, cameras, ceremonies, addons, photographers, settings, bookings] = await Promise.all([
         fetchTab(CONFIG_SHEET_CSV_URLS.services),
         fetchTab(CONFIG_SHEET_CSV_URLS.cameras),
         fetchTab(CONFIG_SHEET_CSV_URLS.ceremonies),
         fetchTab(CONFIG_SHEET_CSV_URLS.addons),
         fetchTab(CONFIG_SHEET_CSV_URLS.photographers),
         fetchTab(CONFIG_SHEET_CSV_URLS.settings),
-        fetchTab(CONFIG_SHEET_CSV_URLS.media),
         fetchTab(CONFIG_SHEET_CSV_URLS.bookings),
       ]);
       if (cancelled) return;
@@ -171,17 +166,8 @@ export function useConfig() {
               return acc;
             }, {})
           : DEFAULT_CONFIG.settings,
-        media: useRows(media, 'media')
-          ? media.map<MediaRow>((r) => {
-              const t = mediaTy(r.type);
-              return {
-                type: t,
-                url: normalizeMediaUrl(r.url ?? '', t),
-                alt: r.alt ?? '',
-                poster: normalizeMediaUrl(r.poster ?? '', 'image'),
-              };
-            }).filter((m) => m.url)
-          : DEFAULT_CONFIG.media,
+        // media 寫死在 defaults.ts，不從 Sheet 抓
+        media: DEFAULT_CONFIG.media,
         bookings: useRows(bookings, 'bookings')
           ? bookings
               .map<BookingRow>((r) => ({

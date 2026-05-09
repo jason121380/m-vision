@@ -68,7 +68,7 @@ export function AdminApp() {
     if (res.ok) {
       const { counts, skipped, errors } = res.data;
       const lines: string[] = ['匯入完成', ''];
-      const order = ['services', 'cameras', 'ceremonies', 'addons', 'photographers', 'media', 'settings', 'bookings'];
+      const order = ['services', 'cameras', 'ceremonies', 'addons', 'photographers', 'settings', 'bookings'];
       for (const k of order) {
         if (counts[k] != null) lines.push(`${k}: ${counts[k]}`);
       }
