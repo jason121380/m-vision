@@ -18,7 +18,7 @@ type AuthState =
   | { status: 'guest' }
   | { status: 'in'; user: { id: number; username: string } };
 
-const TABS = [
+const SETTINGS_SUBTABS = [
   { key: 'settings', label: '基本資料' },
   { key: 'services', label: '服務選項' },
   { key: 'cameras', label: '機位' },
@@ -26,15 +26,17 @@ const TABS = [
   { key: 'addons', label: '加選項目' },
   { key: 'photographers', label: '攝影師' },
   { key: 'bookings', label: '檔期' },
-  { key: 'submissions', label: '送單紀錄' },
 ] as const;
 
-type TabKey = (typeof TABS)[number]['key'];
+type SettingsTabKey = (typeof SETTINGS_SUBTABS)[number]['key'];
+type TabKey = SettingsTabKey | 'submissions';
 
 export function AdminApp() {
   const [auth, setAuth] = useState<AuthState>({ status: 'checking' });
   const [tab, setTab] = useState<TabKey>('settings');
   const [importing, setImporting] = useState(false);
+  const [settingsExpanded, setSettingsExpanded] = useState(true);
+  const inSettings = SETTINGS_SUBTABS.some((t) => t.key === tab);
 
   useEffect(() => {
     api.get<{ user: { id: number; username: string } | null }>('/api/auth/me').then((res) => {
@@ -116,15 +118,30 @@ export function AdminApp() {
       </div>
       <div className="admin-body">
         <div className="admin-side">
-          {TABS.map((t) => (
+          <button
+            type="button"
+            className={`admin-side-group${inSettings ? ' active' : ''}`}
+            onClick={() => setSettingsExpanded((x) => !x)}
+            aria-expanded={settingsExpanded}
+          >
+            <span className="caret">{settingsExpanded ? '▾' : '▸'}</span>
+            設定
+          </button>
+          {SETTINGS_SUBTABS.map((t) => (
             <button
               key={t.key}
-              className={tab === t.key ? 'active' : ''}
+              className={`admin-side-sub${tab === t.key ? ' active' : ''}${settingsExpanded ? '' : ' hidden-sub'}`}
               onClick={() => setTab(t.key)}
             >
               {t.label}
             </button>
           ))}
+          <button
+            className={tab === 'submissions' ? 'active' : ''}
+            onClick={() => setTab('submissions')}
+          >
+            送單紀錄
+          </button>
         </div>
         <div className="admin-content">
           <Section tab={tab} />
@@ -190,7 +207,7 @@ function Section({ tab }: { tab: TabKey }) {
         path="settings"
         columns={[
           { key: 'key', label: 'Key', type: 'text', width: '40%' },
-          { key: 'value', label: 'Value', type: 'longtext' },
+          { key: 'value', label: 'Value', type: 'text' },
         ]}
         blank={() => ({ key: '', value: '' })}
       />
