@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { Editor } from './Editor';
 import { BookingsView } from './BookingsView';
+import { SettingsView } from './SettingsView';
 import { SubmissionsView } from './SubmissionsView';
 import './admin.css';
 import type {
@@ -10,8 +11,13 @@ import type {
   CeremonyRow,
   PhotographerRow,
   ServiceRow,
-  SettingRow,
 } from './types';
+
+type Theme = 'light' | 'dark';
+const readTheme = (): Theme => {
+  if (typeof localStorage === 'undefined') return 'dark';
+  return localStorage.getItem('theme') === 'light' ? 'light' : 'dark';
+};
 
 type AuthState =
   | { status: 'checking' }
@@ -34,7 +40,15 @@ export function AdminApp() {
   const [auth, setAuth] = useState<AuthState>({ status: 'checking' });
   const [tab, setTab] = useState<TabKey>('settings');
   const [settingsExpanded, setSettingsExpanded] = useState(true);
+  const [theme, setTheme] = useState<Theme>(readTheme);
   const inSettings = SETTINGS_SUBTABS.some((t) => t.key === tab);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
 
   useEffect(() => {
     api.get<{ user: { id: number; username: string } | null }>('/api/auth/me').then((res) => {
@@ -79,8 +93,16 @@ export function AdminApp() {
         </div>
         <div className="admin-top-right">
           <span>{auth.user.username}</span>
+          <button
+            className="admin-btn admin-theme-toggle"
+            onClick={toggleTheme}
+            aria-label="切換深淺色"
+            title={theme === 'dark' ? '切換淺色' : '切換深色'}
+          >
+            {theme === 'dark' ? '☀' : '☾'}
+          </button>
           <button className="admin-btn" onClick={onLogout}>登出</button>
-          <a className="admin-btn" href="/" target="_blank" rel="noopener noreferrer">查看客人預約頁面</a>
+          <a className="admin-btn admin-link" href="/" target="_blank" rel="noopener noreferrer">查看客人預約頁面</a>
         </div>
       </div>
       <div className="admin-body">
@@ -172,20 +194,7 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: (u: { id: number; username: str
 }
 
 function Section({ tab }: { tab: TabKey }) {
-  if (tab === 'settings') {
-    return (
-      <Editor<SettingRow>
-        title="基本資料"
-        hint="公司資訊（公司名、稅號、負責人、地址、銀行、訂金金額）會出現在客戶看到的契約 PDF 上，照實填即可。max_video_slots_per_day / max_photo_slots_per_day 是每天最多接幾組動態 / 平面，超過前台行事曆那天會被擋。max_video_cameras_per_day / max_photo_cameras_per_day 是每天動態 / 平面總機位上限（多組相加），到上限後機位選項會灰掉。Key 欄是程式判斷用的識別碼，不要改；只改 Value。"
-        path="settings"
-        columns={[
-          { key: 'key', label: 'Key', type: 'text', width: '40%' },
-          { key: 'value', label: 'Value', type: 'text' },
-        ]}
-        blank={() => ({ key: '', value: '' })}
-      />
-    );
-  }
+  if (tab === 'settings') return <SettingsView />;
   if (tab === 'services') {
     return (
       <Editor<ServiceRow>
@@ -205,10 +214,10 @@ function Section({ tab }: { tab: TabKey }) {
     return (
       <Editor<CameraRow>
         title="機位"
-        hint="客戶在第一頁選完服務後挑的機位數。Type 區分動態（video）跟平面（photo），各自有自己的選項清單。Label 文字裡必須含「單機 / 二機 / 雙機 / 三機 / 四機」其中一個關鍵字，因為系統會從 label 推算這是幾台機；少了關鍵字累計會錯。Price 是該機位數的加價（基本價之外）。"
+        hint="客戶在第一頁選完服務後挑的機位數。類型區分動態 / 平面，各自有自己的選項清單。名稱裡必須含「單機 / 二機 / 雙機 / 三機 / 四機」其中一個關鍵字，因為系統會從名稱推算這是幾台機；少了關鍵字累計會錯。價格是該機位數的加價（基本價之外）。"
         path="cameras"
         columns={[
-          { key: 'type', label: 'Type', type: 'enum', options: ['video', 'photo'], width: '12%' },
+          { key: 'type', label: '類型', type: 'enum', options: ['video', 'photo'], optionLabels: { video: '動態', photo: '平面' }, width: '12%' },
           { key: 'key', label: 'Key', type: 'text', width: '15%' },
           { key: 'label', label: '名稱', type: 'text' },
           { key: 'price', label: '價格', type: 'number', width: '12%' },
@@ -222,10 +231,10 @@ function Section({ tab }: { tab: TabKey }) {
     return (
       <Editor<CeremonyRow>
         title="儀式"
-        hint="儀式數量加價（文定 / 迎娶 / 證婚算幾個的加價）。Type 分動態 / 平面，各有自己一套價。Key 用 0 / 1 / 2 / 3 對應「無 / 單 / 雙 / 三儀式」固定不能改。Price 是該數量的加價（沒儀式 = 0）。"
+        hint="儀式數量加價（文定 / 迎娶 / 證婚算幾個的加價）。類型分動態 / 平面，各有自己一套價。Key 用 0 / 1 / 2 / 3 對應「無 / 單 / 雙 / 三儀式」固定不能改。價格是該數量的加價（沒儀式 = 0）。"
         path="ceremonies"
         columns={[
-          { key: 'type', label: 'Type', type: 'enum', options: ['video', 'photo'], width: '12%' },
+          { key: 'type', label: '類型', type: 'enum', options: ['video', 'photo'], optionLabels: { video: '動態', photo: '平面' }, width: '12%' },
           { key: 'key', label: 'Key', type: 'text', width: '15%' },
           { key: 'label', label: '名稱', type: 'text' },
           { key: 'price', label: '價格', type: 'number', width: '15%' },
@@ -253,12 +262,12 @@ function Section({ tab }: { tab: TabKey }) {
     return (
       <Editor<PhotographerRow>
         title="攝影師"
-        hint="客戶第二頁選的指定攝影師。Type 分動態（video）/ 平面（photo），分開列。同一個人若既能拍動態又能拍平面 → 建兩筆，key 一樣、type 不同。第一筆 key=any 是「不指定（輪班）」固定要有。Photo 是頭像，可貼 Drive 分享連結或外部 https 圖片網址。Price 是指定該攝影師的加價（不指定 = 0）。Desc 是介紹文，Portfolio 是作品集連結。"
+        hint="客戶第二頁選的指定攝影師。類型分動態 / 平面，分開列。同一個人若既能拍動態又能拍平面 → 建兩筆，key 一樣、類型不同。第一筆 key=any 是「不指定（輪班）」固定要有。頭像可貼 Drive 分享連結或外部 https 圖片網址。價格是指定該攝影師的加價（不指定 = 0）。"
         path="photographers"
         modalAdd
         addLabel="新增攝影師"
         columns={[
-          { key: 'type', label: 'Type', type: 'enum', options: ['video', 'photo'], width: '10%' },
+          { key: 'type', label: '類型', type: 'enum', options: ['video', 'photo'], optionLabels: { video: '動態', photo: '平面' }, width: '10%' },
           { key: 'key', label: 'Key', type: 'text', width: '12%' },
           { key: 'name', label: '名字', type: 'text' },
           { key: 'role', label: '角色', type: 'text' },

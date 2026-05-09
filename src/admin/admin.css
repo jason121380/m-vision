@@ -98,6 +98,24 @@
 .adm-checkbox-role{opacity:.7;font-size:11.5px}
 .adm-empty-tip{font-size:12.5px;color:var(--ink-muted);padding:8px 0}
 
+/* 預約檔期 — 大頭貼 */
+.bk-leads{display:flex;flex-wrap:wrap;gap:8px}
+.bk-lead{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink);white-space:nowrap}
+.bk-avatar{width:24px;height:24px;border-radius:50%;object-fit:cover;background:rgba(255,255,255,.06);border:1px solid var(--line);flex-shrink:0}
+.bk-avatar-sm{width:20px;height:20px;border-radius:50%;object-fit:cover;background:rgba(255,255,255,.08);border:1px solid var(--line);flex-shrink:0;display:inline-flex;align-items:center;justify-content:center}
+.bk-avatar-fallback{display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:var(--ink-soft);background:var(--bg);font-weight:500}
+.adm-checkbox-item.on .bk-avatar-sm{border-color:rgba(255,255,255,.3)}
+
+/* 設定 form */
+.adm-settings-form{display:flex;flex-direction:column;gap:16px;max-width:680px}
+.adm-field-hint{color:var(--ink-muted);font-weight:normal;font-size:11px;margin-left:6px;letter-spacing:0}
+
+/* 主題切換 */
+.admin-theme-toggle{font-size:16px;line-height:1;padding:6px 12px;min-width:36px}
+/* 「查看客人預約頁面」連結拔底線 */
+.admin-link{text-decoration:none}
+.admin-link:hover{text-decoration:none}
+
 @media (max-width: 700px) {
   .admin-body{grid-template-columns:1fr;grid-template-rows:auto 1fr}
   .admin-side{border-right:none;border-bottom:1px solid var(--line);display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;padding:8px;white-space:nowrap}

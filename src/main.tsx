@@ -2,8 +2,9 @@ import { lazy, StrictMode, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 
-// 鎖定深色模式（前後台共用）
-document.documentElement.dataset.theme = 'dark';
+// 主題（admin 右上有開關，存 localStorage）；首次或解析失敗都預設深色
+const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('theme') : null;
+document.documentElement.dataset.theme = stored === 'light' ? 'light' : 'dark';
 
 // 動態載入 admin bundle，只有 ?admin=1 才會抓
 const AdminApp = lazy(() =>

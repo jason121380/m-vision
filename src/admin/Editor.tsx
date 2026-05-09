@@ -137,7 +137,9 @@ export function Editor<T extends Record<string, unknown>>({
                   onChange={(e) => patchDraft(col.key, e.target.value)}
                 >
                   {(col.options ?? []).map((o) => (
-                    <option key={o} value={o}>{o}</option>
+                    <option key={o} value={o}>
+                      {col.optionLabels?.[o] ?? o}
+                    </option>
                   ))}
                 </select>
               ) : col.type === 'number' ? (

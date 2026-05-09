@@ -4,7 +4,8 @@ export type ColumnSpec<T> = {
   key: keyof T;
   label: string;
   type: 'text' | 'number' | 'longtext' | 'enum';
-  options?: string[]; // 給 enum 用
+  options?: string[]; // 給 enum 用：實際值
+  optionLabels?: Record<string, string>; // value → 顯示文字（中文化）
   width?: string;
 };
 
@@ -85,7 +86,9 @@ export function EditableTable<T extends Record<string, unknown>>({
                         onChange={(e) => update(idx, col.key, e.target.value)}
                       >
                         {(col.options ?? []).map((o) => (
-                          <option key={o} value={o}>{o}</option>
+                          <option key={o} value={o}>
+                            {col.optionLabels?.[o] ?? o}
+                          </option>
                         ))}
                       </select>
                     </td>
