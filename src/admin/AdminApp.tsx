@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { Editor } from './Editor';
 import { BookingsView } from './BookingsView';
-import { CeremoniesView } from './CeremoniesView';
 import { ServicesView } from './ServicesView';
 import { SettingsView } from './SettingsView';
 import { SubmissionsView } from './SubmissionsView';
@@ -10,6 +9,7 @@ import './admin.css';
 import type {
   AddonRow,
   CameraRow,
+  CeremonyRow,
   PhotographerRow,
 } from './types';
 
@@ -204,7 +204,21 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: (u: { id: number; username: str
 function Section({ tab }: { tab: TabKey }) {
   if (tab === 'settings') return <SettingsView />;
   if (tab === 'services') return <ServicesView />;
-  if (tab === 'ceremonies') return <CeremoniesView />;
+  if (tab === 'ceremonies') {
+    return (
+      <Editor<CeremonyRow>
+        title="儀式"
+        hint="儀式數量加價（文定 / 迎娶 / 證婚共幾個的加價），類型分動態 / 平面分開定價。範例：「無儀式 / 0」「單儀式 / 4000」「雙儀式 / 8000」。"
+        path="ceremonies"
+        columns={[
+          { key: 'type', label: '類型', type: 'enum', options: ['video', 'photo'], optionLabels: { video: '動態', photo: '平面' }, width: '14%' },
+          { key: 'label', label: '名稱', type: 'text' },
+          { key: 'price', label: '價格', type: 'number', width: '20%' },
+        ]}
+        blank={() => ({ type: 'video', key: genKey(), label: '', price: 0 })}
+      />
+    );
+  }
 
   if (tab === 'cameras') {
     return (
