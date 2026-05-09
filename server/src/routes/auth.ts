@@ -1,10 +1,14 @@
 import { Hono } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
-import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
-import { db, schema } from '../db/index.ts';
-import { createSession, destroySession, findSession, SESSION_COOKIE } from '../auth/session.ts';
+import { read } from '../store/storage.ts';
+import {
+  createSession,
+  destroySession,
+  findSession,
+  SESSION_COOKIE,
+} from '../auth/session.ts';
 
 export const authRoutes = new Hono();
 
@@ -19,18 +23,14 @@ authRoutes.post('/login', async (c) => {
   if (!parsed.success) return c.json({ error: 'bad payload' }, 400);
   const { username, password } = parsed.data;
 
-  const rows = await db
-    .select()
-    .from(schema.adminUsers)
-    .where(eq(schema.adminUsers.username, username))
-    .limit(1);
-  const user = rows[0];
+  const data = await read();
+  const user = data.admins.find((u) => u.username === username);
   if (!user) return c.json({ error: 'invalid credentials' }, 401);
 
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) return c.json({ error: 'invalid credentials' }, 401);
 
-  const { token, expiresAt } = await createSession(user.id);
+  const { token, expiresAt } = createSession(user.id);
   setCookie(c, SESSION_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -43,14 +43,17 @@ authRoutes.post('/login', async (c) => {
 
 authRoutes.post('/logout', async (c) => {
   const token = getCookie(c, SESSION_COOKIE) ?? '';
-  await destroySession(token);
+  destroySession(token);
   deleteCookie(c, SESSION_COOKIE, { path: '/' });
   return c.json({ ok: true });
 });
 
 authRoutes.get('/me', async (c) => {
   const token = getCookie(c, SESSION_COOKIE) ?? '';
-  const hit = await findSession(token);
-  if (!hit) return c.json({ user: null }, 200);
-  return c.json({ user: { id: hit.user.id, username: hit.user.username } });
+  const sess = findSession(token);
+  if (!sess) return c.json({ user: null });
+  const data = await read();
+  const user = data.admins.find((u) => u.id === sess.userId);
+  if (!user) return c.json({ user: null });
+  return c.json({ user: { id: user.id, username: user.username } });
 });

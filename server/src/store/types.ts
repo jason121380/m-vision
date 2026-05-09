@@ -1,0 +1,69 @@
+// 跟 admin / 前端共用的 row 形狀。沒有 DB id，用 array index 識別。
+// 存進 JSON 檔的形狀就是這幾個 type。
+
+export type CamType = 'video' | 'photo';
+export type MediaType = 'image' | 'video';
+
+export type ServiceRow = { key: string; label: string; price: number };
+export type CameraRow = { type: CamType; key: string; label: string; price: number; note: string };
+export type CeremonyRow = { type: CamType; key: string; label: string; price: number };
+export type AddonRow = { key: string; label: string; price: number };
+export type PhotographerRow = {
+  type: CamType;
+  key: string;
+  name: string;
+  role: string;
+  price: number;
+  photo: string;
+  desc: string;
+  portfolio: string;
+};
+export type MediaRow = { type: MediaType; url: string; alt: string; poster: string };
+export type SettingsMap = Record<string, string>;
+export type BookingRow = {
+  date: string;
+  videoSlots: number;
+  photoSlots: number;
+  videoCamsUsed: number;
+  photoCamsUsed: number;
+  videoLeads: string[];
+  photoLeads: string[];
+  notes: string;
+};
+export type SubmissionRow = {
+  id: number;
+  submittedAt: string; // ISO
+  groom: string;
+  bride: string;
+  phone: string;
+  eventDate: string;
+  service: string;
+  weddingTime: string;
+  restaurant: string;
+  hotel: string;
+  cerWz: string;
+  cerYq: string;
+  cerZh: string;
+  makeupTime: string;
+  total: number;
+  breakdown: string;
+  pdfUrl: string;
+  signature: string;
+  raw: unknown;
+};
+export type AdminUser = { id: number; username: string; passwordHash: string };
+
+export type DataShape = {
+  services: ServiceRow[];
+  cameras: CameraRow[];
+  ceremonies: CeremonyRow[];
+  addons: AddonRow[];
+  photographers: PhotographerRow[];
+  media: MediaRow[];
+  settings: SettingsMap;
+  bookings: BookingRow[];
+  submissions: SubmissionRow[];
+  admins: AdminUser[];
+  nextSubmissionId: number;
+  nextAdminId: number;
+};
