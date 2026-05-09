@@ -12,6 +12,9 @@ const GIDS = {
   bookings: '770609893',
 } as const;
 
+type TabKey = keyof typeof GIDS;
+const TAB_KEYS = Object.keys(GIDS) as TabKey[];
+
 const DEFAULT_BASE =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vTFQckgyvf1EHhsOPeI8X1SPsaqQTert9W53cOfeTHy3TkGseK1bfzI4jn7euXKS5CGlgYxJ18Ml2I-/pub';
 
@@ -69,127 +72,141 @@ const num = (v: string | undefined): number => {
 const ty = (v: string | undefined): 'video' | 'photo' => (v === 'photo' ? 'photo' : 'video');
 const mediaTy = (v: string | undefined): 'image' | 'video' => (v === 'video' ? 'video' : 'image');
 
-export type ImportCounts = {
-  services: number;
-  cameras: number;
-  ceremonies: number;
-  addons: number;
-  photographers: number;
-  media: number;
-  settings: number;
-  bookings: number;
+export type ImportResult = {
+  counts: Partial<Record<TabKey, number>>;
+  skipped: TabKey[];
+  errors: Partial<Record<TabKey, string>>;
 };
 
-export async function importFromSheet(base?: string): Promise<ImportCounts> {
+export async function importFromSheet(base?: string): Promise<ImportResult> {
   const csvBase = base ?? process.env.SHEET_CSV_BASE ?? DEFAULT_BASE;
   const csvUrl = (gid: string) => `${csvBase}?gid=${gid}&single=true&output=csv`;
 
   async function fetchTab(gid: string): Promise<Record<string, string>[]> {
     const res = await fetch(csvUrl(gid), { redirect: 'follow' });
-    if (!res.ok) throw new Error(`fetch ${gid} failed: ${res.status}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return csvToObjects(await res.text());
   }
 
-  const [services, cameras, ceremonies, addons, photographers, media, settingsRows, bookings] =
-    await Promise.all([
-      fetchTab(GIDS.services),
-      fetchTab(GIDS.cameras),
-      fetchTab(GIDS.ceremonies),
-      fetchTab(GIDS.addons),
-      fetchTab(GIDS.photographers),
-      fetchTab(GIDS.media),
-      fetchTab(GIDS.settings),
-      fetchTab(GIDS.bookings),
-    ]);
+  const settled = await Promise.allSettled(TAB_KEYS.map((k) => fetchTab(GIDS[k])));
 
-  await update((d) => {
-    d.services = services.map((r) => ({
-      key: r.key ?? '',
-      label: r.label ?? '',
-      price: num(r.price),
-    }));
-    d.cameras = cameras.map((r) => ({
-      type: ty(r.type),
-      key: r.key ?? '',
-      label: r.label ?? '',
-      price: num(r.price),
-      note: r.note ?? '',
-    }));
-    d.ceremonies = ceremonies.map((r) => ({
-      type: ty(r.type),
-      key: r.key ?? '',
-      label: r.label ?? '',
-      price: num(r.price),
-    }));
-    d.addons = addons.map((r) => ({
-      key: r.key ?? '',
-      label: r.label ?? '',
-      price: num(r.price),
-    }));
-    d.photographers = photographers.map((r) => ({
-      type: ty(r.type),
-      key: r.key ?? '',
-      name: r.name ?? '',
-      role: r.role ?? '',
-      price: num(r.price),
-      photo: r.photo ?? '',
-      desc: r.desc ?? '',
-      portfolio: r.portfolio ?? '',
-    }));
-    d.media = media
-      .filter((r) => (r.url ?? '').trim() !== '')
-      .map((r) => ({
-        type: mediaTy(r.type),
-        url: r.url ?? '',
-        alt: r.alt ?? '',
-        poster: r.poster ?? '',
-      }));
+  const fetched: Partial<Record<TabKey, Record<string, string>[]>> = {};
+  const skipped: TabKey[] = [];
+  const errors: Partial<Record<TabKey, string>> = {};
 
-    const next: SettingsMap = {};
-    for (const r of settingsRows) {
-      if (r.key) next[r.key] = r.value ?? '';
+  settled.forEach((r, i) => {
+    const k = TAB_KEYS[i]!;
+    if (r.status === 'fulfilled') {
+      fetched[k] = r.value;
+    } else {
+      skipped.push(k);
+      errors[k] = r.reason instanceof Error ? r.reason.message : String(r.reason);
     }
-    d.settings = next;
-
-    // bookings 用 upsert，保留現有預約資料
-    for (const r of bookings) {
-      const date = (r.date ?? '').trim();
-      if (!date) continue;
-      const videoLeads = (r.videoLeads ?? '').split(',').map((s) => s.trim()).filter(Boolean);
-      const photoLeads = (r.photoLeads ?? '').split(',').map((s) => s.trim()).filter(Boolean);
-      const existing = d.bookings.find((b) => b.date === date);
-      if (existing) {
-        existing.videoSlots = num(r.videoSlots);
-        existing.photoSlots = num(r.photoSlots);
-        existing.videoCamsUsed = num(r.videoCamsUsed);
-        existing.photoCamsUsed = num(r.photoCamsUsed);
-        existing.videoLeads = videoLeads;
-        existing.photoLeads = photoLeads;
-        existing.notes = r.notes ?? '';
-      } else {
-        d.bookings.push({
-          date,
-          videoSlots: num(r.videoSlots),
-          photoSlots: num(r.photoSlots),
-          videoCamsUsed: num(r.videoCamsUsed),
-          photoCamsUsed: num(r.photoCamsUsed),
-          videoLeads,
-          photoLeads,
-          notes: r.notes ?? '',
-        });
-      }
-    }
-    d.bookings.sort((a, b) => a.date.localeCompare(b.date));
   });
 
-  return {
-    services: services.length,
-    cameras: cameras.length,
-    ceremonies: ceremonies.length,
-    addons: addons.length,
-    photographers: photographers.length,
-    media: media.filter((r) => (r.url ?? '').trim() !== '').length,
-    settings: settingsRows.filter((r) => !!r.key).length,
-    bookings: bookings.length,
-  };
+  await update((d) => {
+    if (fetched.services) {
+      d.services = fetched.services.map((r) => ({
+        key: r.key ?? '',
+        label: r.label ?? '',
+        price: num(r.price),
+      }));
+    }
+    if (fetched.cameras) {
+      d.cameras = fetched.cameras.map((r) => ({
+        type: ty(r.type),
+        key: r.key ?? '',
+        label: r.label ?? '',
+        price: num(r.price),
+        note: r.note ?? '',
+      }));
+    }
+    if (fetched.ceremonies) {
+      d.ceremonies = fetched.ceremonies.map((r) => ({
+        type: ty(r.type),
+        key: r.key ?? '',
+        label: r.label ?? '',
+        price: num(r.price),
+      }));
+    }
+    if (fetched.addons) {
+      d.addons = fetched.addons.map((r) => ({
+        key: r.key ?? '',
+        label: r.label ?? '',
+        price: num(r.price),
+      }));
+    }
+    if (fetched.photographers) {
+      d.photographers = fetched.photographers.map((r) => ({
+        type: ty(r.type),
+        key: r.key ?? '',
+        name: r.name ?? '',
+        role: r.role ?? '',
+        price: num(r.price),
+        photo: r.photo ?? '',
+        desc: r.desc ?? '',
+        portfolio: r.portfolio ?? '',
+      }));
+    }
+    if (fetched.media) {
+      d.media = fetched.media
+        .filter((r) => (r.url ?? '').trim() !== '')
+        .map((r) => ({
+          type: mediaTy(r.type),
+          url: r.url ?? '',
+          alt: r.alt ?? '',
+          poster: r.poster ?? '',
+        }));
+    }
+    if (fetched.settings) {
+      const next: SettingsMap = {};
+      for (const r of fetched.settings) {
+        if (r.key) next[r.key] = r.value ?? '';
+      }
+      d.settings = next;
+    }
+    if (fetched.bookings) {
+      // bookings 用 upsert，保留現有預約資料
+      for (const r of fetched.bookings) {
+        const date = (r.date ?? '').trim();
+        if (!date) continue;
+        const videoLeads = (r.videoLeads ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+        const photoLeads = (r.photoLeads ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+        const existing = d.bookings.find((b) => b.date === date);
+        if (existing) {
+          existing.videoSlots = num(r.videoSlots);
+          existing.photoSlots = num(r.photoSlots);
+          existing.videoCamsUsed = num(r.videoCamsUsed);
+          existing.photoCamsUsed = num(r.photoCamsUsed);
+          existing.videoLeads = videoLeads;
+          existing.photoLeads = photoLeads;
+          existing.notes = r.notes ?? '';
+        } else {
+          d.bookings.push({
+            date,
+            videoSlots: num(r.videoSlots),
+            photoSlots: num(r.photoSlots),
+            videoCamsUsed: num(r.videoCamsUsed),
+            photoCamsUsed: num(r.photoCamsUsed),
+            videoLeads,
+            photoLeads,
+            notes: r.notes ?? '',
+          });
+        }
+      }
+      d.bookings.sort((a, b) => a.date.localeCompare(b.date));
+    }
+  });
+
+  const counts: Partial<Record<TabKey, number>> = {};
+  if (fetched.services) counts.services = fetched.services.length;
+  if (fetched.cameras) counts.cameras = fetched.cameras.length;
+  if (fetched.ceremonies) counts.ceremonies = fetched.ceremonies.length;
+  if (fetched.addons) counts.addons = fetched.addons.length;
+  if (fetched.photographers) counts.photographers = fetched.photographers.length;
+  if (fetched.media) counts.media = fetched.media.filter((r) => (r.url ?? '').trim() !== '').length;
+  if (fetched.settings) counts.settings = fetched.settings.filter((r) => !!r.key).length;
+  if (fetched.bookings) counts.bookings = fetched.bookings.length;
+
+  return { counts, skipped, errors };
 }

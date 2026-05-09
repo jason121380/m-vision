@@ -215,10 +215,11 @@ adminRoutes.delete('/bookings/:id', async (c) => {
 });
 
 // 從 Google Sheet 公開 CSV 整張覆蓋（bookings 是 upsert）
+// 任何分頁抓不到都會跳過，不會擋其他分頁繼續寫入
 adminRoutes.post('/import-sheet', async (c) => {
   try {
-    const counts = await importFromSheet();
-    return c.json({ ok: true, counts });
+    const result = await importFromSheet();
+    return c.json({ ok: true, ...result });
   } catch (err) {
     return c.json({ error: err instanceof Error ? err.message : String(err) }, 500);
   }
