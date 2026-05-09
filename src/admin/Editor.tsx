@@ -20,6 +20,8 @@ type Props<T extends Record<string, unknown>> = {
   modalAdd?: boolean;
   /** Modal 標題前綴（modalAdd 才用），例如「新增攝影師」 */
   addLabel?: string;
+  /** 哪些列是必要的（無法刪除 / 移動，但欄位仍可改） */
+  locked?: (row: T) => boolean;
 };
 
 export function Editor<T extends Record<string, unknown>>({
@@ -33,6 +35,7 @@ export function Editor<T extends Record<string, unknown>>({
   serialize,
   modalAdd,
   addLabel,
+  locked,
 }: Props<T>) {
   const [rows, setRows] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
@@ -112,6 +115,7 @@ export function Editor<T extends Record<string, unknown>>({
           columns={columns}
           blank={blank}
           noAdd={modalAdd}
+          locked={locked}
         />
       )}
 

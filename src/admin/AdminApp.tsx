@@ -2,16 +2,24 @@ import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { Editor } from './Editor';
 import { BookingsView } from './BookingsView';
+import { CeremoniesView } from './CeremoniesView';
+import { ServicesView } from './ServicesView';
 import { SettingsView } from './SettingsView';
 import { SubmissionsView } from './SubmissionsView';
 import './admin.css';
 import type {
   AddonRow,
   CameraRow,
-  CeremonyRow,
   PhotographerRow,
-  ServiceRow,
 } from './types';
+
+// 後台不要露 key，新增的列自動產生一個唯一 ID 當 key
+const genKey = (): string => {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID().split('-')[0]!;
+  }
+  return Math.random().toString(36).slice(2, 10);
+};
 
 type Theme = 'light' | 'dark';
 const readTheme = (): Theme => {
@@ -195,51 +203,22 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: (u: { id: number; username: str
 
 function Section({ tab }: { tab: TabKey }) {
   if (tab === 'settings') return <SettingsView />;
-  if (tab === 'services') {
-    return (
-      <Editor<ServiceRow>
-        title="服務選項"
-        hint="客戶在第一頁選的「動態錄影 / 平面拍照 / 動態＋平面」三個選項。價格是純宴客的基本費，後續加機位、加儀式、加攝影師都會疊加上去。Key 必須維持 video / photo / both 不能改（程式邏輯靠它判斷）；只改 label（顯示文字）跟 price（價格）。"
-        path="services"
-        columns={[
-          { key: 'key', label: 'Key', type: 'text', width: '20%' },
-          { key: 'label', label: '名稱', type: 'text' },
-          { key: 'price', label: '價格', type: 'number', width: '15%' },
-        ]}
-        blank={() => ({ key: '', label: '', price: 0 })}
-      />
-    );
-  }
+  if (tab === 'services') return <ServicesView />;
+  if (tab === 'ceremonies') return <CeremoniesView />;
+
   if (tab === 'cameras') {
     return (
       <Editor<CameraRow>
         title="機位"
-        hint="客戶在第一頁選完服務後挑的機位數。類型區分動態 / 平面，各自有自己的選項清單。名稱裡必須含「單機 / 二機 / 雙機 / 三機 / 四機」其中一個關鍵字，因為系統會從名稱推算這是幾台機；少了關鍵字累計會錯。價格是該機位數的加價（基本價之外）。"
+        hint="客戶在第一頁選完服務後挑的機位數，類型分動態 / 平面。名稱裡必須含「單機 / 二機 / 雙機 / 三機 / 四機」其中一個關鍵字，因為系統會從名稱推算這是幾台機；少了關鍵字累計會錯。價格是該機位數的加價（基本價之外）。"
         path="cameras"
         columns={[
-          { key: 'type', label: '類型', type: 'enum', options: ['video', 'photo'], optionLabels: { video: '動態', photo: '平面' }, width: '12%' },
-          { key: 'key', label: 'Key', type: 'text', width: '15%' },
+          { key: 'type', label: '類型', type: 'enum', options: ['video', 'photo'], optionLabels: { video: '動態', photo: '平面' }, width: '14%' },
           { key: 'label', label: '名稱', type: 'text' },
-          { key: 'price', label: '價格', type: 'number', width: '12%' },
+          { key: 'price', label: '價格', type: 'number', width: '14%' },
           { key: 'note', label: '備註', type: 'text' },
         ]}
-        blank={() => ({ type: 'video', key: '', label: '', price: 0, note: '' })}
-      />
-    );
-  }
-  if (tab === 'ceremonies') {
-    return (
-      <Editor<CeremonyRow>
-        title="儀式"
-        hint="儀式數量加價（文定 / 迎娶 / 證婚算幾個的加價）。類型分動態 / 平面，各有自己一套價。Key 用 0 / 1 / 2 / 3 對應「無 / 單 / 雙 / 三儀式」固定不能改。價格是該數量的加價（沒儀式 = 0）。"
-        path="ceremonies"
-        columns={[
-          { key: 'type', label: '類型', type: 'enum', options: ['video', 'photo'], optionLabels: { video: '動態', photo: '平面' }, width: '12%' },
-          { key: 'key', label: 'Key', type: 'text', width: '15%' },
-          { key: 'label', label: '名稱', type: 'text' },
-          { key: 'price', label: '價格', type: 'number', width: '15%' },
-        ]}
-        blank={() => ({ type: 'video', key: '', label: '', price: 0 })}
+        blank={() => ({ type: 'video', key: genKey(), label: '', price: 0, note: '' })}
       />
     );
   }
@@ -247,14 +226,14 @@ function Section({ tab }: { tab: TabKey }) {
     return (
       <Editor<AddonRow>
         title="加選項目"
-        hint="客戶第二頁的選配項目（SDE 快剪快播、REELS 短影音等）。第一筆 key=none 是「不加選」那列，必須保留，不然客戶會找不到「無」的選項。其他列的 key 可以隨便取（程式不靠它判斷），label 是顯示給客戶看的名稱，price 是該項目的加價。"
+        hint="客戶第二頁的選配項目（SDE 快剪快播、REELS 短影音等）。第一筆「無加選」是預設選中的選項，不可刪除。其他列直接寫名稱跟價格即可。"
         path="addons"
         columns={[
-          { key: 'key', label: 'Key', type: 'text', width: '20%' },
           { key: 'label', label: '名稱', type: 'text' },
-          { key: 'price', label: '價格', type: 'number', width: '15%' },
+          { key: 'price', label: '價格', type: 'number', width: '20%' },
         ]}
-        blank={() => ({ key: '', label: '', price: 0 })}
+        blank={() => ({ key: genKey(), label: '', price: 0 })}
+        locked={(r) => r.key === 'none'}
       />
     );
   }
@@ -262,21 +241,21 @@ function Section({ tab }: { tab: TabKey }) {
     return (
       <Editor<PhotographerRow>
         title="攝影師"
-        hint="客戶第二頁選的指定攝影師。類型分動態 / 平面，分開列。同一個人若既能拍動態又能拍平面 → 建兩筆，key 一樣、類型不同。第一筆 key=any 是「不指定（輪班）」固定要有。頭像可貼 Drive 分享連結或外部 https 圖片網址。價格是指定該攝影師的加價（不指定 = 0）。"
+        hint="客戶第二頁選的指定攝影師，類型分動態 / 平面分開列。同一個人若既能拍動態又能拍平面 → 開兩筆。每個類型第一筆「不指定（輪班）」是預設選項不可刪除。頭像可貼 Drive 分享連結或外部 https 圖片網址。"
         path="photographers"
         modalAdd
         addLabel="新增攝影師"
         columns={[
           { key: 'type', label: '類型', type: 'enum', options: ['video', 'photo'], optionLabels: { video: '動態', photo: '平面' }, width: '10%' },
-          { key: 'key', label: 'Key', type: 'text', width: '12%' },
           { key: 'name', label: '名字', type: 'text' },
           { key: 'role', label: '角色', type: 'text' },
           { key: 'price', label: '價格', type: 'number', width: '10%' },
-          { key: 'photo', label: '頭像 URL', type: 'text' },
+          { key: 'photo', label: '頭像', type: 'text' },
           { key: 'desc', label: '介紹', type: 'longtext' },
-          { key: 'portfolio', label: '作品集 URL', type: 'text' },
+          { key: 'portfolio', label: '作品集', type: 'text' },
         ]}
-        blank={() => ({ type: 'video', key: '', name: '', role: '', price: 1000, photo: '', desc: '', portfolio: '' })}
+        blank={() => ({ type: 'video', key: genKey(), name: '', role: '', price: 1000, photo: '', desc: '', portfolio: '' })}
+        locked={(r) => r.key === 'any'}
       />
     );
   }
