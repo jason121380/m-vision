@@ -1,15 +1,7 @@
 import 'dotenv/config';
-import { db, pg, schema } from '../src/db/index.ts';
+import { update } from '../src/store/storage.ts';
+import type { SettingsMap } from '../src/store/types.ts';
 
-/*
- * 把目前 publish-to-web 的 Google Sheet 資料一次倒進 Postgres。
- * 跑：
- *   cd server
- *   npm run import:sheet
- * 完整覆蓋 catalog 類分頁，bookings 用 upsert 不蓋掉現有客戶資料。
- *
- * 你那份 Sheet 各分頁 gid（從前端 src/config.ts 對齊）：
- */
 const GIDS = {
   services: '0',
   cameras: '799839686',
@@ -28,7 +20,6 @@ function csvUrl(gid: string): string {
   return `${BASE}?gid=${gid}&single=true&output=csv`;
 }
 
-// 簡易 CSV parser（跟前端 src/lib/csv.ts 同邏輯）
 function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
@@ -91,7 +82,7 @@ const mediaTy = (v: string | undefined): 'image' | 'video' => (v === 'video' ? '
 
 async function main() {
   console.log('[import] fetching CSVs...');
-  const [services, cameras, ceremonies, addons, photographers, media, settings, bookings] =
+  const [services, cameras, ceremonies, addons, photographers, media, settingsRows, bookings] =
     await Promise.all([
       fetchTab(GIDS.services),
       fetchTab(GIDS.cameras),
@@ -104,102 +95,62 @@ async function main() {
     ]);
 
   console.log(
-    `[import] rows: services=${services.length} cameras=${cameras.length} ceremonies=${ceremonies.length} addons=${addons.length} photographers=${photographers.length} media=${media.length} settings=${settings.length} bookings=${bookings.length}`,
+    `[import] rows: services=${services.length} cameras=${cameras.length} ceremonies=${ceremonies.length} addons=${addons.length} photographers=${photographers.length} media=${media.length} settings=${settingsRows.length} bookings=${bookings.length}`,
   );
 
-  await db.transaction(async (tx) => {
-    // catalog 全清掉再插
-    await tx.delete(schema.services);
-    if (services.length > 0) {
-      await tx.insert(schema.services).values(
-        services.map((r, i) => ({
-          key: r.key ?? '',
-          label: r.label ?? '',
-          price: num(r.price),
-          sortOrder: i,
-        })),
-      );
-    }
+  await update((d) => {
+    d.services = services.map((r) => ({
+      key: r.key ?? '',
+      label: r.label ?? '',
+      price: num(r.price),
+    }));
 
-    await tx.delete(schema.cameras);
-    if (cameras.length > 0) {
-      await tx.insert(schema.cameras).values(
-        cameras.map((r, i) => ({
-          type: ty(r.type),
-          key: r.key ?? '',
-          label: r.label ?? '',
-          price: num(r.price),
-          note: r.note ?? '',
-          sortOrder: i,
-        })),
-      );
-    }
+    d.cameras = cameras.map((r) => ({
+      type: ty(r.type),
+      key: r.key ?? '',
+      label: r.label ?? '',
+      price: num(r.price),
+      note: r.note ?? '',
+    }));
 
-    await tx.delete(schema.ceremonies);
-    if (ceremonies.length > 0) {
-      await tx.insert(schema.ceremonies).values(
-        ceremonies.map((r, i) => ({
-          type: ty(r.type),
-          key: r.key ?? '',
-          label: r.label ?? '',
-          price: num(r.price),
-          sortOrder: i,
-        })),
-      );
-    }
+    d.ceremonies = ceremonies.map((r) => ({
+      type: ty(r.type),
+      key: r.key ?? '',
+      label: r.label ?? '',
+      price: num(r.price),
+    }));
 
-    await tx.delete(schema.addons);
-    if (addons.length > 0) {
-      await tx.insert(schema.addons).values(
-        addons.map((r, i) => ({
-          key: r.key ?? '',
-          label: r.label ?? '',
-          price: num(r.price),
-          sortOrder: i,
-        })),
-      );
-    }
+    d.addons = addons.map((r) => ({
+      key: r.key ?? '',
+      label: r.label ?? '',
+      price: num(r.price),
+    }));
 
-    await tx.delete(schema.photographers);
-    if (photographers.length > 0) {
-      await tx.insert(schema.photographers).values(
-        photographers.map((r, i) => ({
-          type: ty(r.type),
-          key: r.key ?? '',
-          name: r.name ?? '',
-          role: r.role ?? '',
-          price: num(r.price),
-          photo: r.photo ?? '',
-          desc: r.desc ?? '',
-          portfolio: r.portfolio ?? '',
-          sortOrder: i,
-        })),
-      );
-    }
+    d.photographers = photographers.map((r) => ({
+      type: ty(r.type),
+      key: r.key ?? '',
+      name: r.name ?? '',
+      role: r.role ?? '',
+      price: num(r.price),
+      photo: r.photo ?? '',
+      desc: r.desc ?? '',
+      portfolio: r.portfolio ?? '',
+    }));
 
-    await tx.delete(schema.media);
-    if (media.length > 0) {
-      await tx.insert(schema.media).values(
-        media
-          .filter((r) => (r.url ?? '').trim() !== '')
-          .map((r, i) => ({
-            type: mediaTy(r.type),
-            url: r.url ?? '',
-            alt: r.alt ?? '',
-            poster: r.poster ?? '',
-            sortOrder: i,
-          })),
-      );
-    }
+    d.media = media
+      .filter((r) => (r.url ?? '').trim() !== '')
+      .map((r) => ({
+        type: mediaTy(r.type),
+        url: r.url ?? '',
+        alt: r.alt ?? '',
+        poster: r.poster ?? '',
+      }));
 
-    await tx.delete(schema.settings);
-    if (settings.length > 0) {
-      await tx.insert(schema.settings).values(
-        settings
-          .filter((r) => (r.key ?? '').trim() !== '')
-          .map((r) => ({ key: r.key!, value: r.value ?? '' })),
-      );
+    const next: SettingsMap = {};
+    for (const r of settingsRows) {
+      if (r.key) next[r.key] = r.value ?? '';
     }
+    d.settings = next;
 
     // bookings 用 upsert（保留現有預約）
     for (const r of bookings) {
@@ -207,9 +158,17 @@ async function main() {
       if (!date) continue;
       const videoLeads = (r.videoLeads ?? '').split(',').map((s) => s.trim()).filter(Boolean);
       const photoLeads = (r.photoLeads ?? '').split(',').map((s) => s.trim()).filter(Boolean);
-      await tx
-        .insert(schema.bookings)
-        .values({
+      const existing = d.bookings.find((b) => b.date === date);
+      if (existing) {
+        existing.videoSlots = num(r.videoSlots);
+        existing.photoSlots = num(r.photoSlots);
+        existing.videoCamsUsed = num(r.videoCamsUsed);
+        existing.photoCamsUsed = num(r.photoCamsUsed);
+        existing.videoLeads = videoLeads;
+        existing.photoLeads = photoLeads;
+        existing.notes = r.notes ?? '';
+      } else {
+        d.bookings.push({
           date,
           videoSlots: num(r.videoSlots),
           photoSlots: num(r.photoSlots),
@@ -218,28 +177,16 @@ async function main() {
           videoLeads,
           photoLeads,
           notes: r.notes ?? '',
-        })
-        .onConflictDoUpdate({
-          target: schema.bookings.date,
-          set: {
-            videoSlots: num(r.videoSlots),
-            photoSlots: num(r.photoSlots),
-            videoCamsUsed: num(r.videoCamsUsed),
-            photoCamsUsed: num(r.photoCamsUsed),
-            videoLeads,
-            photoLeads,
-            notes: r.notes ?? '',
-          },
         });
+      }
     }
+    d.bookings.sort((a, b) => a.date.localeCompare(b.date));
   });
 
-  console.log('[import] done');
-  await pg.end();
+  console.log('[import] done — wrote to data/data.json');
 }
 
-main().catch(async (err) => {
+main().catch((err) => {
   console.error(err);
-  await pg.end();
   process.exit(1);
 });

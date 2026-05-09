@@ -1,72 +1,68 @@
 # m-vision-server
 
-Hono + Drizzle + Postgres 後端，取代 Google Apps Script + Sheet。
+Hono server，前端 + 後端 + 後台共用一個服務。**不需要資料庫**：所有資料存在 `data/data.json` 一個檔案。
 
 ## 本地起服務
 
-需要 Docker + Node 20。
-
 ```bash
-# 1. 起 Postgres
-docker compose up -d        # 在 repo 根目錄
-
-# 2. 設定 env
 cp server/.env.example server/.env
-# 編輯 server/.env，至少把 SESSION_SECRET 換掉
 
-# 3. 安裝依賴
 cd server
 npm install
-
-# 4. 建表（drizzle-kit push 直接套 schema，不走 migration 檔案）
-npm run db:push
-
-# 5. 建 admin 帳號（預設 admin / 1234）
-npm run seed:admin
-# 或自訂：ADMIN_USERNAME=foo ADMIN_PASSWORD=bar npm run seed:admin
-
-# 6. 從 Google Sheet 倒既有資料（一次性）
-npm run import:sheet
-
-# 7. 啟動
 npm run dev
-# → http://localhost:3001
+# → http://localhost:3001（順便 serve 前端 dist/，但 dev 通常從 vite 那邊跑）
+
+# 第一次啟動會自動建 admin / 1234 帳號（看 console）
+# 要從現有 Google Sheet 倒資料進來：
+npm run import:sheet
+```
+
+前端開發另一個 terminal：
+
+```bash
+cd ..
+npm run dev          # → http://localhost:5173，會 proxy /api 到 :3001
 ```
 
 ## API
 
 公開：
-
-- `GET  /api/config` — 完整 config（前端 useConfig 會打）
-- `POST /api/booking` — 客戶送單，會寫 submissions + 累加 bookings
+- `GET  /api/config` — 完整 config
+- `POST /api/booking` — 客戶送單
 - `GET  /api/health`
+- `GET  /api/_count` — 列數摘要 + DATA_DIR 路徑
 
 驗證：
-
-- `POST /api/auth/login` — `{ username, password }` → 種 session cookie
+- `POST /api/auth/login` — `{ username, password }` → 種 cookie
 - `POST /api/auth/logout`
 - `GET  /api/auth/me`
 
 Admin（須登入）：
-
-- `GET  /api/admin/{services|cameras|ceremonies|addons|photographers|media|settings|bookings|submissions}`
+- `GET  /api/admin/{table}`
 - `PUT  /api/admin/{services|cameras|ceremonies|addons|photographers|media|settings}` — 整張覆蓋
-- `POST/PUT/DELETE /api/admin/bookings[/:id]` — 單筆 CRUD
+- `POST/PUT/DELETE /api/admin/bookings[/:id]` — 單筆 CRUD（id = array index）
+
+## 資料儲存
+
+- 預設 `server/data/data.json`，atomic write（先寫 .tmp 再 rename）
+- 路徑可用環境變數 `DATA_DIR` 改
 
 ## Zeabur 部署
 
-repo 根目錄是前端 Vite SPA，`server/` 是後端。Zeabur 設定兩個服務：
+repo 根目錄 `zbpack.json` 已設好。一個 service 同時 build 前端 + 跑 server。
 
-1. 前端 service：root `/`，build = `npm run build`，static publish dir `dist`
-2. 後端 service：root `/server`，環境變數設 `DATABASE_URL` `SESSION_SECRET` `CORS_ORIGINS=https://m-vision.zeabur.app` `PDF_UPLOAD_ENDPOINT`
+**重要：要掛 Volume，否則重新部署會把 `data/data.json` 洗掉。**
 
-Postgres 用 Zeabur 的 Managed Postgres，把 connection string 設成後端 service 的 `DATABASE_URL`。
-
-第一次部署完跑：
-
-```bash
-# Zeabur shell 或本地連線到 Zeabur Postgres
-npm run db:push
-ADMIN_USERNAME=admin ADMIN_PASSWORD=1234 npm run seed:admin
-npm run import:sheet
-```
+1. 推 code 上 GitHub
+2. Zeabur 建 service 連到 repo
+3. 環境變數設：
+   - `ADMIN_USERNAME` / `ADMIN_PASSWORD`（第一次部署用，後續可拿掉）
+   - `PDF_UPLOAD_ENDPOINT`（保留 PDF 上傳到 Drive）
+   - `DATA_DIR=/data`（配合下面 volume）
+4. 「Volumes」分頁掛一個 volume 到 `/data` 路徑
+5. 部署完進 Console（如果要倒既有 Sheet 資料）：
+   ```bash
+   cd server
+   npm run import:sheet
+   ```
+   不跑也行，後台手動加資料也可以。

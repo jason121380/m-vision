@@ -1,42 +1,37 @@
 import { randomBytes } from 'node:crypto';
-import { eq } from 'drizzle-orm';
-import { db, schema } from '../db/index.ts';
 
 export const SESSION_COOKIE = 'mv_admin_session';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 天
+
+type SessionRow = { token: string; userId: number; expiresAt: number };
+
+// in-memory store；container 重啟 = 全部 session 失效需要重新登入。
+// 個人後台使用量很小，這個取捨值得。
+const sessions = new Map<string, SessionRow>();
 
 export function newToken(): string {
   return randomBytes(32).toString('hex');
 }
 
-export async function createSession(userId: number): Promise<{ token: string; expiresAt: Date }> {
+export function createSession(userId: number): { token: string; expiresAt: Date } {
   const token = newToken();
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
-  await db.insert(schema.sessions).values({ id: token, userId, expiresAt });
+  sessions.set(token, { token, userId, expiresAt: expiresAt.getTime() });
   return { token, expiresAt };
 }
 
-export async function findSession(token: string) {
+export function findSession(token: string): SessionRow | null {
   if (!token) return null;
-  const rows = await db
-    .select({
-      session: schema.sessions,
-      user: schema.adminUsers,
-    })
-    .from(schema.sessions)
-    .innerJoin(schema.adminUsers, eq(schema.sessions.userId, schema.adminUsers.id))
-    .where(eq(schema.sessions.id, token))
-    .limit(1);
-  const hit = rows[0];
-  if (!hit) return null;
-  if (hit.session.expiresAt.getTime() < Date.now()) {
-    await db.delete(schema.sessions).where(eq(schema.sessions.id, token));
+  const row = sessions.get(token);
+  if (!row) return null;
+  if (row.expiresAt < Date.now()) {
+    sessions.delete(token);
     return null;
   }
-  return hit;
+  return row;
 }
 
-export async function destroySession(token: string): Promise<void> {
+export function destroySession(token: string): void {
   if (!token) return;
-  await db.delete(schema.sessions).where(eq(schema.sessions.id, token));
+  sessions.delete(token);
 }
