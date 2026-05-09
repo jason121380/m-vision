@@ -33,7 +33,6 @@ type TabKey = SettingsTabKey | 'bookings' | 'submissions';
 export function AdminApp() {
   const [auth, setAuth] = useState<AuthState>({ status: 'checking' });
   const [tab, setTab] = useState<TabKey>('settings');
-  const [importing, setImporting] = useState(false);
   const [settingsExpanded, setSettingsExpanded] = useState(true);
   const inSettings = SETTINGS_SUBTABS.some((t) => t.key === tab);
 
@@ -54,37 +53,6 @@ export function AdminApp() {
     setAuth({ status: 'guest' });
   };
 
-  const onImportSheet = async () => {
-    if (importing) return;
-    if (!confirm('從 Google Sheet 匯入會「整張覆蓋」目前資料（bookings 是 upsert 不會清空），後台手動修改的內容會被覆蓋。確定要繼續？')) return;
-    setImporting(true);
-    const res = await api.post<{
-      counts: Record<string, number>;
-      skipped: string[];
-      errors: Record<string, string>;
-    }>('/api/admin/import-sheet', {});
-    setImporting(false);
-    if (res.ok) {
-      const { counts, skipped, errors } = res.data;
-      const lines: string[] = ['匯入完成', ''];
-      const order = ['services', 'cameras', 'ceremonies', 'addons', 'photographers', 'settings', 'bookings'];
-      for (const k of order) {
-        if (counts[k] != null) lines.push(`${k}: ${counts[k]}`);
-      }
-      if (skipped.length > 0) {
-        lines.push('', '以下分頁抓取失敗，已跳過（既有資料保留）：');
-        for (const k of skipped) {
-          lines.push(`  - ${k}: ${errors[k] ?? 'unknown'}`);
-        }
-        lines.push('', '請確認 Sheet 該分頁有「發佈到網路 → CSV」。');
-      }
-      lines.push('', '重新載入頁面以顯示新資料。');
-      alert(lines.join('\n'));
-      window.location.reload();
-    } else {
-      alert(`匯入失敗：${res.error}`);
-    }
-  };
 
   if (auth.status === 'checking') {
     return <div className="admin-login"><div>檢查登入狀態…</div></div>;
@@ -108,11 +76,8 @@ export function AdminApp() {
         />
         <div className="admin-top-right">
           <span>{auth.user.username}</span>
-          <button className="admin-btn" onClick={onImportSheet} disabled={importing}>
-            {importing ? '匯入中…' : '從 Sheet 匯入'}
-          </button>
           <button className="admin-btn" onClick={onLogout}>登出</button>
-          <a className="admin-btn" href="/">回前台</a>
+          <a className="admin-btn" href="/" target="_blank" rel="noopener noreferrer">查看客人預約頁面</a>
         </div>
       </div>
       <div className="admin-body">
@@ -179,8 +144,8 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: (u: { id: number; username: str
     <div className="admin-login">
       <form className="admin-login-card" onSubmit={submit}>
         <h1>M VISION</h1>
-        <div className="sub">Admin</div>
-        <label>USERNAME</label>
+        <div className="sub">後台管理</div>
+        <label>帳號</label>
         <input
           type="text"
           value={username}
@@ -188,7 +153,7 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: (u: { id: number; username: str
           autoComplete="username"
           required
         />
-        <label>PASSWORD</label>
+        <label>密碼</label>
         <input
           type="password"
           value={password}
@@ -207,8 +172,8 @@ function Section({ tab }: { tab: TabKey }) {
   if (tab === 'settings') {
     return (
       <Editor<SettingRow>
-        title="基本資料 settings"
-        hint="key 是程式判斷用，不要亂改。value 是顯示給使用者看的字串。例：max_photo_cameras_per_day=3 控制平面單日機位上限。"
+        title="基本資料"
+        hint="公司資訊（公司名、稅號、負責人、地址、銀行、訂金金額）會出現在客戶看到的契約 PDF 上，照實填即可。max_video_slots_per_day / max_photo_slots_per_day 是每天最多接幾組動態 / 平面，超過前台行事曆那天會被擋。max_video_cameras_per_day / max_photo_cameras_per_day 是每天動態 / 平面總機位上限（多組相加），到上限後機位選項會灰掉。Key 欄是程式判斷用的識別碼，不要改；只改 Value。"
         path="settings"
         columns={[
           { key: 'key', label: 'Key', type: 'text', width: '40%' },
@@ -221,8 +186,8 @@ function Section({ tab }: { tab: TabKey }) {
   if (tab === 'services') {
     return (
       <Editor<ServiceRow>
-        title="服務選項 services"
-        hint="key 必須是 video / photo / both（程式判斷用，code 寫死）。"
+        title="服務選項"
+        hint="客戶在第一頁選的「動態錄影 / 平面拍照 / 動態＋平面」三個選項。價格是純宴客的基本費，後續加機位、加儀式、加攝影師都會疊加上去。Key 必須維持 video / photo / both 不能改（程式邏輯靠它判斷）；只改 label（顯示文字）跟 price（價格）。"
         path="services"
         columns={[
           { key: 'key', label: 'Key', type: 'text', width: '20%' },
@@ -236,8 +201,8 @@ function Section({ tab }: { tab: TabKey }) {
   if (tab === 'cameras') {
     return (
       <Editor<CameraRow>
-        title="機位 cameras"
-        hint="label 必須含「單機/二機/雙機/三機/四機/五機/六機」其中一個（前端用來算機位數累加）。"
+        title="機位"
+        hint="客戶在第一頁選完服務後挑的機位數。Type 區分動態（video）跟平面（photo），各自有自己的選項清單。Label 文字裡必須含「單機 / 二機 / 雙機 / 三機 / 四機」其中一個關鍵字，因為系統會從 label 推算這是幾台機；少了關鍵字累計會錯。Price 是該機位數的加價（基本價之外）。"
         path="cameras"
         columns={[
           { key: 'type', label: 'Type', type: 'enum', options: ['video', 'photo'], width: '12%' },
@@ -253,8 +218,8 @@ function Section({ tab }: { tab: TabKey }) {
   if (tab === 'ceremonies') {
     return (
       <Editor<CeremonyRow>
-        title="儀式 ceremonies"
-        hint="key 0/1/2/3 對應無/單/雙/三儀式。"
+        title="儀式"
+        hint="儀式數量加價（文定 / 迎娶 / 證婚算幾個的加價）。Type 分動態 / 平面，各有自己一套價。Key 用 0 / 1 / 2 / 3 對應「無 / 單 / 雙 / 三儀式」固定不能改。Price 是該數量的加價（沒儀式 = 0）。"
         path="ceremonies"
         columns={[
           { key: 'type', label: 'Type', type: 'enum', options: ['video', 'photo'], width: '12%' },
@@ -269,8 +234,8 @@ function Section({ tab }: { tab: TabKey }) {
   if (tab === 'addons') {
     return (
       <Editor<AddonRow>
-        title="加選項目 addons"
-        hint="key=none 為預設選中那列。"
+        title="加選項目"
+        hint="客戶第二頁的選配項目（SDE 快剪快播、REELS 短影音等）。第一筆 key=none 是「不加選」那列，必須保留，不然客戶會找不到「無」的選項。其他列的 key 可以隨便取（程式不靠它判斷），label 是顯示給客戶看的名稱，price 是該項目的加價。"
         path="addons"
         columns={[
           { key: 'key', label: 'Key', type: 'text', width: '20%' },
@@ -284,9 +249,11 @@ function Section({ tab }: { tab: TabKey }) {
   if (tab === 'photographers') {
     return (
       <Editor<PhotographerRow>
-        title="攝影師 photographers"
-        hint="同一個人能拍動態+平面就建兩列同 key 不同 type。photo 欄位可貼 Drive 分享連結或 https URL。"
+        title="攝影師"
+        hint="客戶第二頁選的指定攝影師。Type 分動態（video）/ 平面（photo），分開列。同一個人若既能拍動態又能拍平面 → 建兩筆，key 一樣、type 不同。第一筆 key=any 是「不指定（輪班）」固定要有。Photo 是頭像，可貼 Drive 分享連結或外部 https 圖片網址。Price 是指定該攝影師的加價（不指定 = 0）。Desc 是介紹文，Portfolio 是作品集連結。"
         path="photographers"
+        modalAdd
+        addLabel="新增攝影師"
         columns={[
           { key: 'type', label: 'Type', type: 'enum', options: ['video', 'photo'], width: '10%' },
           { key: 'key', label: 'Key', type: 'text', width: '12%' },

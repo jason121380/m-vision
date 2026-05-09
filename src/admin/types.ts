@@ -54,6 +54,12 @@ export type SubmissionRow = {
   weddingTime: string;
   restaurant: string;
   hotel: string;
+  cerWz: string;
+  cerYq: string;
+  cerZh: string;
+  makeupTime: string;
   total: number;
+  breakdown: string;
+  signature: string;
   pdfUrl: string;
 };
