@@ -36,6 +36,7 @@ type TabKey = (typeof TABS)[number]['key'];
 export function AdminApp() {
   const [auth, setAuth] = useState<AuthState>({ status: 'checking' });
   const [tab, setTab] = useState<TabKey>('settings');
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => {
     api.get<{ user: { id: number; username: string } | null }>('/api/auth/me').then((res) => {
@@ -52,6 +53,32 @@ export function AdminApp() {
   const onLogout = async () => {
     await api.post('/api/auth/logout', {});
     setAuth({ status: 'guest' });
+  };
+
+  const onImportSheet = async () => {
+    if (importing) return;
+    if (!confirm('從 Google Sheet 匯入會「整張覆蓋」目前資料（bookings 是 upsert 不會清空），後台手動修改的內容會被覆蓋。確定要繼續？')) return;
+    setImporting(true);
+    const res = await api.post<{ counts: Record<string, number> }>('/api/admin/import-sheet', {});
+    setImporting(false);
+    if (res.ok) {
+      const c = res.data.counts;
+      alert(
+        `匯入完成\n\n` +
+          `services: ${c.services}\n` +
+          `cameras: ${c.cameras}\n` +
+          `ceremonies: ${c.ceremonies}\n` +
+          `addons: ${c.addons}\n` +
+          `photographers: ${c.photographers}\n` +
+          `media: ${c.media}\n` +
+          `settings: ${c.settings}\n` +
+          `bookings: ${c.bookings}\n\n` +
+          `重新載入頁面以顯示新資料。`,
+      );
+      window.location.reload();
+    } else {
+      alert(`匯入失敗：${res.error}`);
+    }
   };
 
   if (auth.status === 'checking') {
@@ -76,6 +103,9 @@ export function AdminApp() {
         />
         <div className="admin-top-right">
           <span>{auth.user.username}</span>
+          <button className="admin-btn" onClick={onImportSheet} disabled={importing}>
+            {importing ? '匯入中…' : '從 Sheet 匯入'}
+          </button>
           <button className="admin-btn" onClick={onLogout}>登出</button>
           <a className="admin-btn" href="/">回前台</a>
         </div>

@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { read, update } from '../store/storage.ts';
+import { importFromSheet } from '../store/import-sheet.ts';
 import { requireAdmin } from '../auth/middleware.ts';
 import type {
   AddonRow,
@@ -211,4 +212,14 @@ adminRoutes.delete('/bookings/:id', async (c) => {
   });
   if (!deleted) return c.json({ error: 'not found' }, 404);
   return c.json({ ok: true });
+});
+
+// 從 Google Sheet 公開 CSV 整張覆蓋（bookings 是 upsert）
+adminRoutes.post('/import-sheet', async (c) => {
+  try {
+    const counts = await importFromSheet();
+    return c.json({ ok: true, counts });
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, 500);
+  }
 });
