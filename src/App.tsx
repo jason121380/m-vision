@@ -51,21 +51,11 @@ function validatePage(page: number, state: FormState): string[] {
 }
 
 
-type Theme = 'light' | 'dark';
-
-function getInitialTheme(): Theme {
-  if (typeof window === 'undefined') return 'light';
-  const saved = window.localStorage.getItem('mv-theme');
-  if (saved === 'light' || saved === 'dark') return saved;
-  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
-
 export function App() {
   const { config, loaded } = useConfig();
   const [state, setState] = useState<FormState>(initialState);
   const [page, setPage] = useState(1);
   const [modal, setModal] = useState<ModalState>({ type: 'none' });
-  const [theme, setTheme] = useState<Theme>(getInitialTheme);
   const topRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<HTMLDivElement>(null);
 
@@ -74,14 +64,9 @@ export function App() {
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   }, []);
 
-  // 套用主題到 root，並寫回 localStorage
+  // 鎖定深色模式
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    window.localStorage.setItem('mv-theme', theme);
-  }, [theme]);
-
-  const toggleTheme = useCallback(() => {
-    setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
+    document.documentElement.dataset.theme = 'dark';
   }, []);
 
   const update = useCallback((patch: Partial<FormState>) => {
@@ -176,23 +161,7 @@ export function App() {
             }}
           />
           <div className="brand-name">{config.settings.company_name || 'M 視覺影像記錄公司'}</div>
-          <button
-            type="button"
-            className="theme-toggle"
-            onClick={toggleTheme}
-            aria-label={theme === 'dark' ? '切換為日間模式' : '切換為夜間模式'}
-          >
-            {theme === 'dark' ? (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="4" />
-                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
-              </svg>
-            ) : (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-              </svg>
-            )}
-          </button>
+          <div />
         </div>
 
         {page === 1 && config.media.length > 0 && (
