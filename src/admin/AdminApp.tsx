@@ -8,7 +8,6 @@ import type {
   AddonRow,
   CameraRow,
   CeremonyRow,
-  MediaRow,
   PhotographerRow,
   ServiceRow,
   SettingRow,
@@ -26,7 +25,6 @@ const TABS = [
   { key: 'ceremonies', label: '儀式' },
   { key: 'addons', label: '加選項目' },
   { key: 'photographers', label: '攝影師' },
-  { key: 'media', label: '輪播媒體' },
   { key: 'bookings', label: '檔期' },
   { key: 'submissions', label: '送單紀錄' },
 ] as const;
@@ -278,22 +276,6 @@ function Section({ tab }: { tab: TabKey }) {
           { key: 'portfolio', label: '作品集 URL', type: 'text' },
         ]}
         blank={() => ({ type: 'video', key: '', name: '', role: '', price: 1000, photo: '', desc: '', portfolio: '' })}
-      />
-    );
-  }
-  if (tab === 'media') {
-    return (
-      <Editor<MediaRow>
-        title="輪播媒體 media"
-        hint="image 或 video。url 可貼 Drive / YouTube / 直接 URL。poster 可選（影片預覽圖）。"
-        path="media"
-        columns={[
-          { key: 'type', label: 'Type', type: 'enum', options: ['image', 'video'], width: '12%' },
-          { key: 'url', label: 'URL', type: 'text' },
-          { key: 'alt', label: '替代文字', type: 'text' },
-          { key: 'poster', label: 'Poster URL', type: 'text' },
-        ]}
-        blank={() => ({ type: 'image', url: '', alt: '', poster: '' })}
       />
     );
   }
