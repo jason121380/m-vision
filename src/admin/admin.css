@@ -88,8 +88,9 @@
 .adm-field{margin-bottom:14px}
 .adm-field:last-child{margin-bottom:0}
 .adm-field label{display:block;font-size:12px;color:var(--ink-muted);margin-bottom:6px;letter-spacing:.05em;font-weight:500}
-.adm-field input,.adm-field textarea,.adm-field select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:var(--bg-card);color:var(--ink);font-family:inherit;outline:none;transition:border-color .15s,box-shadow .15s}
-.adm-field input:focus,.adm-field textarea:focus,.adm-field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.adm-field input:not([type=checkbox]),.adm-field textarea,.adm-field select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:var(--bg-card);color:var(--ink);font-family:inherit;outline:none;transition:border-color .15s,box-shadow .15s}
+.adm-field input:not([type=checkbox]):focus,.adm-field textarea:focus,.adm-field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.adm-checkbox-item input[type=checkbox]{width:18px;height:18px;margin:0;flex-shrink:0;cursor:pointer}
 .adm-field textarea{resize:vertical;min-height:60px;font-family:inherit}
 .adm-field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .adm-field-row .adm-field{margin-bottom:14px}
