@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { read, update, dataDir } from '../store/storage.ts';
+import { syncBookingsToSheet } from '../store/sync-bookings.ts';
 
 export const publicRoutes = new Hono();
 
@@ -79,7 +80,7 @@ publicRoutes.post('/booking', async (c) => {
     }
   }
 
-  await update((d) => {
+  const result = await update((d) => {
     // 2. 寫 submissions
     const id = d.nextSubmissionId++;
     d.submissions.unshift({
@@ -136,6 +137,9 @@ publicRoutes.post('/booking', async (c) => {
     }
     d.bookings.sort((a, b) => a.date.localeCompare(b.date));
   });
+
+  // 4. 把更新後的整份 bookings 推到備份 Sheet（fire-and-forget）
+  syncBookingsToSheet(result.bookings).catch(() => {});
 
   return c.json({ ok: true, pdfUrl });
 });

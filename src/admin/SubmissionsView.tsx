@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import { TrashIcon } from './TrashIcon';
 import type { SubmissionRow } from './types';
 
 const COL_COUNT = 9;
@@ -97,8 +98,10 @@ export function SubmissionsView() {
                         className="row-del"
                         onClick={() => removeRow(s.id)}
                         disabled={busyId === s.id}
+                        aria-label="刪除"
+                        title="刪除"
                       >
-                        {busyId === s.id ? '...' : '刪'}
+                        <TrashIcon />
                       </button>
                     </td>
                   </tr>

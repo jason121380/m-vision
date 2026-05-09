@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { read, update } from '../store/storage.ts';
 import { importFromSheet } from '../store/import-sheet.ts';
+import { syncBookingsToSheet } from '../store/sync-bookings.ts';
 import { requireAdmin } from '../auth/middleware.ts';
 import type {
   AddonRow,
@@ -200,10 +201,11 @@ adminRoutes.post('/bookings', async (c) => {
   const body = await c.req.json();
   const parsed = bookingSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: 'bad payload', issues: parsed.error.issues }, 400);
-  await update((d) => {
+  const result = await update((d) => {
     d.bookings.push(parsed.data as BookingRow);
     d.bookings.sort((a, b) => a.date.localeCompare(b.date));
   });
+  syncBookingsToSheet(result.bookings).catch(() => {});
   return c.json({ ok: true });
 });
 
@@ -213,7 +215,7 @@ adminRoutes.put('/bookings/:id', async (c) => {
   const parsed = bookingSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: 'bad payload', issues: parsed.error.issues }, 400);
   let updated = false;
-  await update((d) => {
+  const result = await update((d) => {
     if (id >= 0 && id < d.bookings.length) {
       d.bookings[id] = parsed.data as BookingRow;
       d.bookings.sort((a, b) => a.date.localeCompare(b.date));
@@ -221,19 +223,21 @@ adminRoutes.put('/bookings/:id', async (c) => {
     }
   });
   if (!updated) return c.json({ error: 'not found' }, 404);
+  syncBookingsToSheet(result.bookings).catch(() => {});
   return c.json({ ok: true });
 });
 
 adminRoutes.delete('/bookings/:id', async (c) => {
   const id = Number(c.req.param('id'));
   let deleted = false;
-  await update((d) => {
+  const result = await update((d) => {
     if (id >= 0 && id < d.bookings.length) {
       d.bookings.splice(id, 1);
       deleted = true;
     }
   });
   if (!deleted) return c.json({ error: 'not found' }, 404);
+  syncBookingsToSheet(result.bookings).catch(() => {});
   return c.json({ ok: true });
 });
 
@@ -252,7 +256,7 @@ adminRoutes.post('/import-sheet', async (c) => {
 adminRoutes.delete('/submissions/:id', async (c) => {
   const id = Number(c.req.param('id'));
   let removed = false;
-  await update((d) => {
+  const result = await update((d) => {
     const idx = d.submissions.findIndex((s) => s.id === id);
     if (idx < 0) return;
     const sub = d.submissions[idx]!;
@@ -319,5 +323,6 @@ adminRoutes.delete('/submissions/:id', async (c) => {
     removed = true;
   });
   if (!removed) return c.json({ error: 'not found' }, 404);
+  syncBookingsToSheet(result.bookings).catch(() => {});
   return c.json({ ok: true });
 });
