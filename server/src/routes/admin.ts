@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { read, update } from '../store/storage.ts';
@@ -51,6 +52,9 @@ const photographersSchema = z.array(
     photo: z.string().optional().default(''),
     desc: z.string().optional().default(''),
     portfolio: z.string().optional().default(''),
+    username: z.string().optional().default(''),
+    // 從 admin UI 進來時是明碼；存進 data.json 之前 hash 成 passwordHash
+    password: z.string().optional().default(''),
   }),
 );
 const settingsSchema = z.array(
@@ -73,7 +77,16 @@ adminRoutes.get('/services', async (c) => c.json((await read()).services));
 adminRoutes.get('/cameras', async (c) => c.json((await read()).cameras));
 adminRoutes.get('/ceremonies', async (c) => c.json((await read()).ceremonies));
 adminRoutes.get('/addons', async (c) => c.json((await read()).addons));
-adminRoutes.get('/photographers', async (c) => c.json((await read()).photographers));
+adminRoutes.get('/photographers', async (c) => {
+  const d = await read();
+  // 不要把 passwordHash 吐回前端；改用 hasPassword 旗標讓 UI 能顯示「已設定」
+  return c.json(
+    d.photographers.map((p) => {
+      const { passwordHash, ...rest } = p;
+      return { ...rest, hasPassword: !!passwordHash };
+    }),
+  );
+});
 adminRoutes.get('/settings', async (c) => {
   const d = await read();
   return c.json(Object.entries(d.settings).map(([key, value]) => ({ key, value })));
@@ -133,8 +146,39 @@ adminRoutes.put('/photographers', async (c) => {
   const body = await c.req.json();
   const parsed = photographersSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: 'bad payload', issues: parsed.error.issues }, 400);
+
+  // 把現有的 passwordHash 用 key 索引備好。送進來的 row 若 password 留空，保留舊 hash；
+  // 有新 password 就 bcrypt hash 後覆蓋。
+  const cur = await read();
+  const existingByKey = new Map<string, string>();
+  for (const p of cur.photographers) {
+    if (p.passwordHash) existingByKey.set(p.key, p.passwordHash);
+  }
+
+  const next: PhotographerRow[] = [];
+  for (const r of parsed.data) {
+    let passwordHash: string | undefined;
+    if (r.password) {
+      passwordHash = await bcrypt.hash(r.password, 10);
+    } else {
+      passwordHash = existingByKey.get(r.key);
+    }
+    next.push({
+      type: r.type,
+      key: r.key,
+      name: r.name,
+      role: r.role,
+      price: r.price,
+      photo: r.photo,
+      desc: r.desc,
+      portfolio: r.portfolio,
+      username: r.username || undefined,
+      passwordHash,
+    });
+  }
+
   await update((d) => {
-    d.photographers = parsed.data as PhotographerRow[];
+    d.photographers = next;
   });
   return c.json({ ok: true });
 });

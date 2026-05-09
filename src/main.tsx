@@ -6,14 +6,17 @@ import { App } from './App';
 const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('theme') : null;
 document.documentElement.dataset.theme = stored === 'light' ? 'light' : 'dark';
 
-// 動態載入 admin bundle，只有 /admin 才會抓
+// 動態載入 admin / booking bundle，只有對應 path 才會抓
 const AdminApp = lazy(() =>
   import('./admin/AdminApp').then((m) => ({ default: m.AdminApp })),
 );
+const BookingApp = lazy(() =>
+  import('./booking/BookingApp').then((m) => ({ default: m.BookingApp })),
+);
 
-const isAdmin =
-  typeof window !== 'undefined' &&
-  /^\/admin(\/|$)/.test(window.location.pathname);
+const path = typeof window !== 'undefined' ? window.location.pathname : '';
+const isAdmin = /^\/admin(\/|$)/.test(path);
+const isBooking = /^\/booking(\/|$)/.test(path);
 
 // PWA：在 /admin 切換成 admin manifest，「加入主畫面」就會以 /admin 為 start_url
 if (typeof document !== 'undefined') {
@@ -35,6 +38,10 @@ createRoot(document.getElementById('root')!).render(
     {isAdmin ? (
       <Suspense fallback={<div style={{ padding: 40, textAlign: 'center' }}>載入後台…</div>}>
         <AdminApp />
+      </Suspense>
+    ) : isBooking ? (
+      <Suspense fallback={<div style={{ padding: 40, textAlign: 'center' }}>載入中…</div>}>
+        <BookingApp />
       </Suspense>
     ) : (
       <App />

@@ -16,6 +16,8 @@ export type PhotographerRow = {
   photo: string;
   desc: string;
   portfolio: string;
+  username?: string;
+  passwordHash?: string;
 };
 export type SettingsMap = Record<string, string>;
 export type BookingRow = {
@@ -51,6 +53,7 @@ export type SubmissionRow = {
 };
 export type AdminUser = { id: number; username: string; passwordHash: string };
 export type SessionRow = { token: string; userId: number; expiresAt: number };
+export type StaffSessionRow = { token: string; photographerKey: string; expiresAt: number };
 
 export type DataShape = {
   services: ServiceRow[];
@@ -63,6 +66,7 @@ export type DataShape = {
   submissions: SubmissionRow[];
   admins: AdminUser[];
   sessions: SessionRow[];
+  staffSessions: StaffSessionRow[];
   nextSubmissionId: number;
   nextAdminId: number;
 };

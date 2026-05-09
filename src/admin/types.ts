@@ -30,6 +30,11 @@ export type PhotographerRow = {
   desc: string;
   portfolio: string;
   sortOrder?: number;
+  username?: string;
+  // password 是 form-only，admin 在表單填新密碼後送出，server 會 hash
+  password?: string;
+  // server GET 回傳的旗標，UI 用來顯示「已設定」placeholder
+  hasPassword?: boolean;
 };
 export type SettingRow = { key: string; value: string };
 export type BookingRow = {
