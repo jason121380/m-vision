@@ -1,25 +1,16 @@
 import { useEffect, useState } from 'react';
-import { csvToObjects } from '../lib/csv';
 import { DEFAULT_CONFIG } from '../lib/defaults';
-import { CONFIG_SHEET_CSV_URLS } from '../config';
+import { apiFetch } from '../lib/api';
 import type {
   AddonRow,
   AppConfig,
   BookingRow,
   CameraRow,
-  CamType,
   CeremonyRow,
   PhotographerRow,
   ServiceRow,
   SettingsMap,
 } from '../types';
-
-const num = (v: string | undefined): number => {
-  const n = Number(String(v ?? '').replace(/[, ]/g, ''));
-  return Number.isFinite(n) ? n : 0;
-};
-
-const ty = (v: string | undefined): CamType => (v === 'photo' ? 'photo' : 'video');
 
 // 把 Drive 的分享連結 / 檔案 ID / YouTube URL 轉成前端能直接吃的 URL
 function normalizeMediaUrl(url: string, type: 'image' | 'video'): string {
@@ -79,18 +70,15 @@ function normalizeMediaUrl(url: string, type: 'image' | 'video'): string {
   return trimmed;
 }
 
-async function fetchTab(url: string): Promise<Record<string, string>[] | null> {
-  if (!url) return null;
-  try {
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const text = await res.text();
-    return csvToObjects(text);
-  } catch (err) {
-    console.warn(`[config] failed to fetch ${url}:`, err);
-    return null;
-  }
-}
+type ConfigResponse = {
+  services: ServiceRow[];
+  cameras: CameraRow[];
+  ceremonies: CeremonyRow[];
+  addons: AddonRow[];
+  photographers: PhotographerRow[];
+  settings: SettingsMap;
+  bookings: BookingRow[];
+};
 
 export function useConfig() {
   const [config, setConfig] = useState<AppConfig>(DEFAULT_CONFIG);
@@ -99,99 +87,48 @@ export function useConfig() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [services, cameras, ceremonies, addons, photographers, settings, bookings] = await Promise.all([
-        fetchTab(CONFIG_SHEET_CSV_URLS.services),
-        fetchTab(CONFIG_SHEET_CSV_URLS.cameras),
-        fetchTab(CONFIG_SHEET_CSV_URLS.ceremonies),
-        fetchTab(CONFIG_SHEET_CSV_URLS.addons),
-        fetchTab(CONFIG_SHEET_CSV_URLS.photographers),
-        fetchTab(CONFIG_SHEET_CSV_URLS.settings),
-        fetchTab(CONFIG_SHEET_CSV_URLS.bookings),
-      ]);
+      const res = await apiFetch<ConfigResponse>('/api/config');
       if (cancelled) return;
 
-      const useRows = (rows: Record<string, string>[] | null, name: string): rows is Record<string, string>[] => {
-        if (!rows) {
-          console.warn(`[config] "${name}" fetch failed → using defaults`);
-          return false;
-        }
-        if (rows.length === 0) {
-          console.warn(`[config] "${name}" returned no rows → using defaults`);
-          return false;
-        }
-        return true;
-      };
+      if (!res.ok) {
+        console.warn('[config] /api/config failed → using defaults:', res.error);
+        setConfig(DEFAULT_CONFIG);
+        setLoaded(true);
+        return;
+      }
 
+      const d = res.data;
       const next: AppConfig = {
-        services: useRows(services, 'services')
-          ? services.map<ServiceRow>((r) => ({ key: r.key, label: r.label, price: num(r.price) }))
-          : DEFAULT_CONFIG.services,
-        cameras: useRows(cameras, 'cameras')
-          ? cameras.map<CameraRow>((r) => ({
-              type: ty(r.type),
-              key: r.key,
-              label: r.label,
-              price: num(r.price),
-              note: r.note ?? '',
-            }))
-          : DEFAULT_CONFIG.cameras,
-        ceremonies: useRows(ceremonies, 'ceremonies')
-          ? ceremonies.map<CeremonyRow>((r) => ({
-              type: ty(r.type),
-              key: r.key,
-              label: r.label,
-              price: num(r.price),
-            }))
-          : DEFAULT_CONFIG.ceremonies,
-        addons: useRows(addons, 'addons')
-          ? addons.map<AddonRow>((r) => ({ key: r.key, label: r.label, price: num(r.price) }))
-          : DEFAULT_CONFIG.addons,
-        photographers: useRows(photographers, 'photographers')
-          ? photographers.map<PhotographerRow>((r) => ({
-              type: ty(r.type),
-              key: r.key,
-              name: r.name,
-              role: r.role ?? '',
-              price: num(r.price),
-              photo: normalizeMediaUrl(r.photo ?? '', 'image'),
-              desc: r.desc ?? '',
-              portfolio: (r.portfolio ?? '').trim(),
+        services: d.services?.length ? d.services : DEFAULT_CONFIG.services,
+        cameras: d.cameras?.length ? d.cameras : DEFAULT_CONFIG.cameras,
+        ceremonies: d.ceremonies?.length ? d.ceremonies : DEFAULT_CONFIG.ceremonies,
+        addons: d.addons?.length ? d.addons : DEFAULT_CONFIG.addons,
+        photographers: d.photographers?.length
+          ? d.photographers.map<PhotographerRow>((p) => ({
+              ...p,
+              photo: normalizeMediaUrl(p.photo ?? '', 'image'),
+              portfolio: (p.portfolio ?? '').trim(),
             }))
           : DEFAULT_CONFIG.photographers,
-        settings: useRows(settings, 'settings')
-          ? settings.reduce<SettingsMap>((acc, r) => {
-              if (!r.key) return acc;
-              const v = r.value ?? '';
-              acc[r.key] = r.key === 'logo' ? normalizeMediaUrl(v, 'image') : v;
-              return acc;
-            }, {})
-          : DEFAULT_CONFIG.settings,
-        // media 寫死在 defaults.ts，不從 Sheet 抓
+        // media 寫死在 defaults.ts，不從後端讀
         media: DEFAULT_CONFIG.media,
-        bookings: useRows(bookings, 'bookings')
-          ? bookings
-              .map<BookingRow>((r) => ({
-                date: (r.date ?? '').trim(),
-                videoSlots: num(r.videoSlots),
-                photoSlots: num(r.photoSlots),
-                videoCamsUsed: num(r.videoCamsUsed),
-                photoCamsUsed: num(r.photoCamsUsed),
-                videoLeads: (r.videoLeads ?? '').split(',').map((s) => s.trim()).filter(Boolean),
-                photoLeads: (r.photoLeads ?? '').split(',').map((s) => s.trim()).filter(Boolean),
-                notes: r.notes ?? '',
-              }))
-              .filter((b) => b.date)
-          : DEFAULT_CONFIG.bookings,
+        settings:
+          d.settings && Object.keys(d.settings).length
+            ? Object.entries(d.settings).reduce<SettingsMap>((acc, [k, v]) => {
+                acc[k] = k === 'logo' ? normalizeMediaUrl(v, 'image') : v;
+                return acc;
+              }, {})
+            : DEFAULT_CONFIG.settings,
+        bookings: d.bookings ?? [],
       };
 
-      console.info('[config] loaded', {
+      console.info('[config] loaded from /api/config', {
         services: next.services.length,
         cameras: next.cameras.length,
         ceremonies: next.ceremonies.length,
         addons: next.addons.length,
         photographers: next.photographers.length,
         settings: Object.keys(next.settings).length,
-        media: next.media.length,
         bookings: next.bookings.length,
       });
 
