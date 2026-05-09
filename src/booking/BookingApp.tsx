@@ -151,10 +151,14 @@ function ScheduleView({
     return ymd(t.getFullYear(), t.getMonth() + 1, t.getDate());
   }, []);
 
-  const upcoming = useMemo(
-    () => dates.filter((d) => d.date >= today),
-    [dates, today],
-  );
+  const monthDates = useMemo(() => {
+    const y = view.getFullYear();
+    const m = String(view.getMonth() + 1).padStart(2, '0');
+    const prefix = `${y}-${m}-`;
+    return dates.filter((d) => d.date.startsWith(prefix));
+  }, [dates, view]);
+
+  const monthLabel = `${view.getFullYear()} 年 ${view.getMonth() + 1} 月`;
 
   return (
     <div className="bk-app">
@@ -170,33 +174,35 @@ function ScheduleView({
       </div>
 
       <div className="bk-content">
-        <h2>我的預約檔期</h2>
+        <div className="bk-inner">
+          <h2>我的預約檔期</h2>
 
-        {loading && <div className="bk-status">載入中…</div>}
-        {err && <div className="bk-status err">{err}</div>}
+          {loading && <div className="bk-status">載入中…</div>}
+          {err && <div className="bk-status err">{err}</div>}
 
-        {!loading && (
-          <>
-            <MyCalendar view={view} setView={setView} dates={dates} today={today} />
+          {!loading && (
+            <>
+              <MyCalendar view={view} setView={setView} dates={dates} today={today} />
 
-            <div className="bk-section-h">即將來臨</div>
-            {upcoming.length === 0 && <div className="bk-empty">目前沒有預約</div>}
-            {upcoming.length > 0 && (
-              <ul className="bk-list">
-                {upcoming.map((d) => (
-                  <li key={d.date} className="bk-list-item">
-                    <div className="bk-list-date">{d.date}</div>
-                    <div className="bk-list-types">
-                      {d.asVideo && <span className="bk-tag v">動態</span>}
-                      {d.asPhoto && <span className="bk-tag p">平面</span>}
-                    </div>
-                    {d.notes && <div className="bk-list-notes">{d.notes}</div>}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </>
-        )}
+              <div className="bk-section-h">{monthLabel}</div>
+              {monthDates.length === 0 && <div className="bk-empty">本月沒有預約</div>}
+              {monthDates.length > 0 && (
+                <ul className="bk-list">
+                  {monthDates.map((d) => (
+                    <li key={d.date} className="bk-list-item">
+                      <div className="bk-list-date">{d.date}</div>
+                      <div className="bk-list-types">
+                        {d.asVideo && <span className="bk-tag v">動態</span>}
+                        {d.asPhoto && <span className="bk-tag p">平面</span>}
+                      </div>
+                      {d.notes && <div className="bk-list-notes">{d.notes}</div>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
