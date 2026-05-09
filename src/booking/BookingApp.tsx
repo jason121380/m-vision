@@ -9,12 +9,24 @@ type AuthState =
   | { status: 'guest' }
   | { status: 'in'; user: User };
 
+type Theme = 'light' | 'dark';
+const readTheme = (): Theme => {
+  if (typeof localStorage === 'undefined') return 'dark';
+  return localStorage.getItem('theme') === 'light' ? 'light' : 'dark';
+};
+
 export function BookingApp() {
   const [auth, setAuth] = useState<AuthState>({ status: 'checking' });
+  const [theme, setTheme] = useState<Theme>(readTheme);
 
   useEffect(() => {
     document.title = '攝影師預約檔期';
   }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem('theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     api.get<{ user: User | null }>('/api/staff/auth/me').then((res) => {
@@ -28,17 +40,39 @@ export function BookingApp() {
     await api.post('/api/staff/auth/logout', {});
     setAuth({ status: 'guest' });
   };
+  const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
 
   if (auth.status === 'checking') {
     return <div className="bk-loading">載入中…</div>;
   }
   if (auth.status === 'guest') {
-    return <LoginForm onLoggedIn={onLoggedIn} />;
+    return <LoginForm onLoggedIn={onLoggedIn} theme={theme} onToggleTheme={toggleTheme} />;
   }
-  return <ScheduleView user={auth.user} onLogout={onLogout} />;
+  return <ScheduleView user={auth.user} onLogout={onLogout} theme={theme} onToggleTheme={toggleTheme} />;
 }
 
-function LoginForm({ onLoggedIn }: { onLoggedIn: (u: User) => void }) {
+function ThemeToggle({ theme, onToggle }: { theme: Theme; onToggle: () => void }) {
+  return (
+    <button
+      className="bk-btn bk-theme-toggle"
+      onClick={onToggle}
+      aria-label="切換深淺色"
+      title={theme === 'dark' ? '切換淺色' : '切換深色'}
+    >
+      {theme === 'dark' ? '☀' : '☾'}
+    </button>
+  );
+}
+
+function LoginForm({
+  onLoggedIn,
+  theme,
+  onToggleTheme,
+}: {
+  onLoggedIn: (u: User) => void;
+  theme: Theme;
+  onToggleTheme: () => void;
+}) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [err, setErr] = useState('');
@@ -59,6 +93,9 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: (u: User) => void }) {
 
   return (
     <div className="bk-login">
+      <div className="bk-floating-theme">
+        <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+      </div>
       <form className="bk-login-card" onSubmit={submit}>
         <h1>M 視覺</h1>
         <div className="sub">攝影師專區</div>
@@ -85,7 +122,17 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: (u: User) => void }) {
   );
 }
 
-function ScheduleView({ user, onLogout }: { user: User; onLogout: () => void }) {
+function ScheduleView({
+  user,
+  onLogout,
+  theme,
+  onToggleTheme,
+}: {
+  user: User;
+  onLogout: () => void;
+  theme: Theme;
+  onToggleTheme: () => void;
+}) {
   const [dates, setDates] = useState<ScheduleDate[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
@@ -116,7 +163,10 @@ function ScheduleView({ user, onLogout }: { user: User; onLogout: () => void }) 
           <span className="bk-name">{user.name}</span>
           {user.role && <span className="bk-role">（{user.role}）</span>}
         </div>
-        <button className="bk-btn" onClick={onLogout}>登出</button>
+        <div className="bk-top-right">
+          <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+          <button className="bk-btn" onClick={onLogout}>登出</button>
+        </div>
       </div>
 
       <div className="bk-content">
