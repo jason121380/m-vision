@@ -3,7 +3,7 @@ import { Fragment } from 'react';
 export type ColumnSpec<T> = {
   key: keyof T;
   label: string;
-  type: 'text' | 'number' | 'longtext' | 'enum';
+  type: 'text' | 'number' | 'longtext' | 'enum' | 'password';
   options?: string[]; // 給 enum 用：實際值
   optionLabels?: Record<string, string>; // value → 顯示文字（中文化）
   width?: string;
@@ -116,6 +116,20 @@ export function EditableTable<T extends Record<string, unknown>>({
                         value={String(val ?? '')}
                         onChange={(e) => update(idx, col.key, e.target.value)}
                         rows={2}
+                      />
+                    </td>
+                  );
+                }
+                if (col.type === 'password') {
+                  const hasPwd = (row as { hasPassword?: boolean }).hasPassword;
+                  return (
+                    <td key={String(col.key)}>
+                      <input
+                        type="password"
+                        autoComplete="new-password"
+                        placeholder={hasPwd ? '已設定，留空 = 不變更' : '輸入密碼'}
+                        value={String(val ?? '')}
+                        onChange={(e) => update(idx, col.key, e.target.value)}
                       />
                     </td>
                   );

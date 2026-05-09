@@ -158,6 +158,14 @@ export function Editor<T extends Record<string, unknown>>({
                   value={String(val ?? '')}
                   onChange={(e) => patchDraft(col.key, e.target.value)}
                 />
+              ) : col.type === 'password' ? (
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="輸入密碼"
+                  value={String(val ?? '')}
+                  onChange={(e) => patchDraft(col.key, e.target.value)}
+                />
               ) : (
                 <input
                   type="text"

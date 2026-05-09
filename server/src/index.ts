@@ -9,6 +9,7 @@ import { logger } from 'hono/logger';
 import { authRoutes } from './routes/auth.ts';
 import { publicRoutes } from './routes/public.ts';
 import { adminRoutes } from './routes/admin.ts';
+import { staffRoutes } from './routes/staff.ts';
 import { ensureAdmin } from './store/seed.ts';
 import { dataDir } from './store/storage.ts';
 
@@ -34,6 +35,7 @@ app.use(
 app.route('/api/auth', authRoutes);
 app.route('/api', publicRoutes);
 app.route('/api/admin', adminRoutes);
+app.route('/api/staff', staffRoutes);
 
 const STATIC_DIR = process.env.STATIC_DIR ?? '../dist';
 app.use('/*', serveStatic({ root: STATIC_DIR }));

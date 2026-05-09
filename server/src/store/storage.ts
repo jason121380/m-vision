@@ -27,6 +27,7 @@ const EMPTY: DataShape = {
   submissions: [],
   admins: [],
   sessions: [],
+  staffSessions: [],
   nextSubmissionId: 1,
   nextAdminId: 1,
 };
