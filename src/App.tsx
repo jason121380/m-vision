@@ -146,14 +146,7 @@ export function App() {
 
   // 後台空就直接擋住，不偽裝表單可用。Volume 沒掛 / 還沒匯入時最常見。
   if (config.services.length === 0 || Object.keys(config.settings).length === 0) {
-    return (
-      <div className="loading" style={{ flexDirection: 'column', gap: 12, padding: 24, textAlign: 'center' }}>
-        <div>後台尚未設定</div>
-        <div style={{ fontSize: 12, opacity: 0.7, fontStyle: 'normal' }}>
-          請聯絡管理員從後台「從 Sheet 匯入」或手動建立資料
-        </div>
-      </div>
-    );
+    return <div className="loading">後台尚未設定</div>;
   }
 
   return (

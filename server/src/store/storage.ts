@@ -22,7 +22,6 @@ const EMPTY: DataShape = {
   ceremonies: [],
   addons: [],
   photographers: [],
-  media: [],
   settings: {},
   bookings: [],
   submissions: [],
