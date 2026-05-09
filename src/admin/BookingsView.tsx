@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
 import { Modal } from './Modal';
-import type { BookingRow } from './types';
+import type { BookingRow, PhotographerRow } from './types';
 
 type Draft = Omit<BookingRow, 'id'>;
 
@@ -16,11 +16,9 @@ const blankDraft = (): Draft => ({
   notes: '',
 });
 
-const splitLeads = (s: string): string[] =>
-  s.split(',').map((x) => x.trim()).filter(Boolean);
-
 export function BookingsView() {
   const [rows, setRows] = useState<BookingRow[]>([]);
+  const [photographers, setPhotographers] = useState<PhotographerRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [err, setErr] = useState('');
@@ -29,19 +27,44 @@ export function BookingsView() {
 
   const load = async () => {
     setLoading(true);
-    const res = await api.get<BookingRow[]>('/api/admin/bookings');
-    if (res.ok) {
-      setRows(res.data);
+    const [bk, ph] = await Promise.all([
+      api.get<BookingRow[]>('/api/admin/bookings'),
+      api.get<PhotographerRow[]>('/api/admin/photographers'),
+    ]);
+    if (bk.ok) {
+      setRows(bk.data);
       setErr('');
     } else {
-      setErr(`載入失敗：${res.error}`);
+      setErr(`載入失敗：${bk.error}`);
     }
+    if (ph.ok) setPhotographers(ph.data);
     setLoading(false);
   };
 
   useEffect(() => {
     load();
   }, []);
+
+  // 過濾掉 any（輪班）跟 none（佔位），這兩個不能被綁
+  const videoPpl = useMemo(
+    () => photographers.filter((p) => p.type === 'video' && p.key !== 'any' && p.key !== 'none'),
+    [photographers],
+  );
+  const photoPpl = useMemo(
+    () => photographers.filter((p) => p.type === 'photo' && p.key !== 'any' && p.key !== 'none'),
+    [photographers],
+  );
+
+  const nameOf = (list: PhotographerRow[], key: string): string => {
+    const p = list.find((x) => x.key === key);
+    return p ? p.name : key;
+  };
+
+  const renderLeads = (type: 'video' | 'photo', leads: string[]): string => {
+    if (leads.length === 0) return '—';
+    const list = type === 'video' ? videoPpl : photoPpl;
+    return leads.map((k) => nameOf(list, k)).join('、');
+  };
 
   const removeRow = async (id: number) => {
     if (!confirm('確定刪除這筆檔期？')) return;
@@ -57,6 +80,14 @@ export function BookingsView() {
 
   const patchDraft = (patch: Partial<Draft>) => {
     setDraft((d) => (d ? { ...d, ...patch } : d));
+  };
+
+  const toggleLead = (type: 'video' | 'photo', key: string) => {
+    if (!draft) return;
+    const cur = type === 'video' ? draft.videoLeads : draft.photoLeads;
+    const next = cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key];
+    if (type === 'video') patchDraft({ videoLeads: next });
+    else patchDraft({ photoLeads: next });
   };
 
   const saveDraft = async () => {
@@ -77,13 +108,18 @@ export function BookingsView() {
     }
   };
 
+  const closeModal = () => {
+    setDraft(null);
+    setErr('');
+  };
+
   return (
     <div>
       <h2>預約檔期</h2>
       <p className="admin-hint">
         每一列代表「某一天的預約佔用情況」。客戶送單會自動累加進來，你也可以手動新增（例如老闆自己有檔期要先擋住的日子）。
-        欄位意義：動態 / 平面場次（當天接了幾組）、動態 / 平面機位（多組合計幾台機）、動態 / 平面主攝（已被綁住的攝影師 key，逗號分隔）。
-        當這些數字達到「基本資料」裡 max_*_per_day 的上限，前台行事曆 / 機位 / 攝影師會自動變灰。想擋整天 → 把 slots 填到上限；想擋某攝影師 → 把他的 key 加到 leads。
+        欄位意義：動態 / 平面場次（當天接了幾組）、動態 / 平面機位（多組合計幾台機）、動態 / 平面主攝（已被綁住的攝影師）。
+        當這些數字達到「基本資料」裡 max_*_per_day 的上限，前台行事曆 / 機位 / 攝影師會自動變灰。想擋整天 → 把 slots 填到上限；想擋某攝影師 → 把他勾起來。
       </p>
       <div className="admin-toolbar">
         <button className="admin-btn primary" onClick={() => setDraft(blankDraft())}>
@@ -118,10 +154,10 @@ export function BookingsView() {
                 <td><strong>{b.date}</strong></td>
                 <td>{b.videoSlots}</td>
                 <td>{b.videoCamsUsed}</td>
-                <td>{b.videoLeads.join(', ') || '—'}</td>
+                <td>{renderLeads('video', b.videoLeads)}</td>
                 <td>{b.photoSlots}</td>
                 <td>{b.photoCamsUsed}</td>
-                <td>{b.photoLeads.join(', ') || '—'}</td>
+                <td>{renderLeads('photo', b.photoLeads)}</td>
                 <td>{b.notes}</td>
                 <td className="actions">
                   <button
@@ -141,20 +177,10 @@ export function BookingsView() {
       <Modal
         open={!!draft}
         title="新增檔期"
-        onClose={() => {
-          setDraft(null);
-          setErr('');
-        }}
+        onClose={closeModal}
         footer={
           <>
-            <button
-              className="admin-btn"
-              onClick={() => {
-                setDraft(null);
-                setErr('');
-              }}
-              disabled={saving}
-            >
+            <button className="admin-btn" onClick={closeModal} disabled={saving}>
               取消
             </button>
             <button className="admin-btn primary" onClick={saveDraft} disabled={saving}>
@@ -184,7 +210,7 @@ export function BookingsView() {
                 />
               </div>
               <div className="adm-field">
-                <label>動態機位</label>
+                <label>動態機位（總台數）</label>
                 <input
                   type="number"
                   min={0}
@@ -194,13 +220,30 @@ export function BookingsView() {
               </div>
             </div>
             <div className="adm-field">
-              <label>動態主攝（key 逗號分隔）</label>
-              <input
-                type="text"
-                value={draft.videoLeads.join(',')}
-                placeholder="例如：le, jb"
-                onChange={(e) => patchDraft({ videoLeads: splitLeads(e.target.value) })}
-              />
+              <label>動態主攝（可複選，已勾的當天會擋住）</label>
+              {videoPpl.length === 0 ? (
+                <div className="adm-empty-tip">尚未建動態攝影師</div>
+              ) : (
+                <div className="adm-checkbox-group">
+                  {videoPpl.map((p) => {
+                    const on = draft.videoLeads.includes(p.key);
+                    return (
+                      <label
+                        key={p.key}
+                        className={`adm-checkbox-item${on ? ' on' : ''}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={on}
+                          onChange={() => toggleLead('video', p.key)}
+                        />
+                        {p.name}
+                        {p.role && <span className="adm-checkbox-role">（{p.role}）</span>}
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
             </div>
             <div className="adm-field-row">
               <div className="adm-field">
@@ -213,7 +256,7 @@ export function BookingsView() {
                 />
               </div>
               <div className="adm-field">
-                <label>平面機位</label>
+                <label>平面機位（總台數）</label>
                 <input
                   type="number"
                   min={0}
@@ -223,13 +266,30 @@ export function BookingsView() {
               </div>
             </div>
             <div className="adm-field">
-              <label>平面主攝（key 逗號分隔）</label>
-              <input
-                type="text"
-                value={draft.photoLeads.join(',')}
-                placeholder="例如：ryan, zhh"
-                onChange={(e) => patchDraft({ photoLeads: splitLeads(e.target.value) })}
-              />
+              <label>平面主攝（可複選，已勾的當天會擋住）</label>
+              {photoPpl.length === 0 ? (
+                <div className="adm-empty-tip">尚未建平面攝影師</div>
+              ) : (
+                <div className="adm-checkbox-group">
+                  {photoPpl.map((p) => {
+                    const on = draft.photoLeads.includes(p.key);
+                    return (
+                      <label
+                        key={p.key}
+                        className={`adm-checkbox-item${on ? ' on' : ''}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={on}
+                          onChange={() => toggleLead('photo', p.key)}
+                        />
+                        {p.name}
+                        {p.role && <span className="adm-checkbox-role">（{p.role}）</span>}
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
             </div>
             <div className="adm-field">
               <label>備註</label>
