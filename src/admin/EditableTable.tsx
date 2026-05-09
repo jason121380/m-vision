@@ -19,6 +19,8 @@ type Props<T extends Record<string, unknown>> = {
   noAdd?: boolean;
   /** 不允許刪除（settings 整張覆蓋時使用） */
   noDelete?: boolean;
+  /** 判斷某列是否為「必要」鎖定列（無法刪除 / 排序，但欄位仍可改） */
+  locked?: (row: T) => boolean;
 };
 
 export function EditableTable<T extends Record<string, unknown>>({
@@ -29,6 +31,7 @@ export function EditableTable<T extends Record<string, unknown>>({
   emptyMessage = '尚無資料',
   noAdd,
   noDelete,
+  locked,
 }: Props<T>) {
   const update = (idx: number, key: keyof T, val: unknown) => {
     const next = rows.slice();
@@ -128,9 +131,15 @@ export function EditableTable<T extends Record<string, unknown>>({
               })}
               {!noDelete && (
                 <td className="actions">
-                  <button className="move" onClick={() => move(idx, -1)} disabled={idx === 0}>↑</button>
-                  <button className="move" onClick={() => move(idx, +1)} disabled={idx === rows.length - 1}>↓</button>
-                  <button className="row-del" onClick={() => remove(idx)}>刪</button>
+                  {locked?.(row) ? (
+                    <span className="adt-locked-tag">必要</span>
+                  ) : (
+                    <>
+                      <button className="move" onClick={() => move(idx, -1)} disabled={idx === 0}>↑</button>
+                      <button className="move" onClick={() => move(idx, +1)} disabled={idx === rows.length - 1}>↓</button>
+                      <button className="row-del" onClick={() => remove(idx)}>刪</button>
+                    </>
+                  )}
                 </td>
               )}
             </tr>

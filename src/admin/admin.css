@@ -110,6 +110,15 @@
 .adm-settings-form{display:flex;flex-direction:column;gap:16px;max-width:680px}
 .adm-field-hint{color:var(--ink-muted);font-weight:normal;font-size:11px;margin-left:6px;letter-spacing:0}
 
+/* 鎖定列標記 */
+.adt-locked-tag{display:inline-block;font-size:10px;color:var(--ink-muted);padding:3px 8px;border:1px dashed var(--line-strong);border-radius:6px;letter-spacing:.05em}
+
+/* 表格 cell 內副說明（服務選項那邊用） */
+.adm-cell-hint{font-size:11px;color:var(--ink-muted);margin-top:4px;font-weight:normal}
+
+/* 區塊標題（儀式按 video/photo 分段） */
+.adm-section-h{font-size:14px;font-weight:600;color:var(--ink);margin:18px 0 10px;letter-spacing:.06em}
+
 /* 主題切換 */
 .admin-theme-toggle{font-size:16px;line-height:1;padding:6px 12px;min-width:36px}
 /* 「查看客人預約頁面」連結拔底線 */

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
+import { Avatar } from './Avatar';
 import { Modal } from './Modal';
 import type { BookingRow, PhotographerRow } from './types';
 
@@ -65,11 +66,7 @@ export function BookingsView() {
           const name = p ? p.name : k;
           return (
             <span className="bk-lead" key={k}>
-              {p?.photo ? (
-                <img className="bk-avatar" src={p.photo} alt={name} referrerPolicy="no-referrer" />
-              ) : (
-                <span className="bk-avatar bk-avatar-fallback">{name.slice(0, 1)}</span>
-              )}
+              <Avatar src={p?.photo ?? ''} name={name} size="md" />
               <span>{name}</span>
             </span>
           );
@@ -249,11 +246,7 @@ export function BookingsView() {
                           checked={on}
                           onChange={() => toggleLead('video', p.key)}
                         />
-                        {p.photo ? (
-                          <img className="bk-avatar-sm" src={p.photo} alt={p.name} referrerPolicy="no-referrer" />
-                        ) : (
-                          <span className="bk-avatar-sm bk-avatar-fallback">{p.name.slice(0, 1)}</span>
-                        )}
+                        <Avatar src={p.photo} name={p.name} size="sm" />
                         {p.name}
                         {p.role && <span className="adm-checkbox-role">（{p.role}）</span>}
                       </label>
@@ -300,11 +293,7 @@ export function BookingsView() {
                           checked={on}
                           onChange={() => toggleLead('photo', p.key)}
                         />
-                        {p.photo ? (
-                          <img className="bk-avatar-sm" src={p.photo} alt={p.name} referrerPolicy="no-referrer" />
-                        ) : (
-                          <span className="bk-avatar-sm bk-avatar-fallback">{p.name.slice(0, 1)}</span>
-                        )}
+                        <Avatar src={p.photo} name={p.name} size="sm" />
                         {p.name}
                         {p.role && <span className="adm-checkbox-role">（{p.role}）</span>}
                       </label>
