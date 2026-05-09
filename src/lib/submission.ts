@@ -1,4 +1,4 @@
-import { SUBMISSION_ENDPOINT_URL } from '../config';
+import { apiFetch } from './api';
 import { buildSummary, computeTotal, fmtMoney } from './pricing';
 import { cameraCount } from './bookings';
 import type { PdfResult } from './pdf';
@@ -97,14 +97,12 @@ export type SubmissionResult = {
   pdfUrl?: string;
 };
 
+// 走後端 /api/booking：後端會把 PDF 轉發給 Apps Script 上傳到 Drive、
+// 拿回 url 之後寫進 data.json 的 submissions + 累加 bookings。
 export async function submitToSheet(
   state: FormState,
   config: AppConfig,
 ): Promise<SubmissionResult> {
-  if (!SUBMISSION_ENDPOINT_URL) {
-    return { ok: false, error: 'Apps Script endpoint 尚未設定（src/config.ts → SUBMISSION_ENDPOINT_URL）' };
-  }
-
   let pdf: PdfResult | undefined;
   try {
     const { generateContractPdf } = await import('./pdf');
@@ -114,22 +112,12 @@ export async function submitToSheet(
   }
 
   const payload = buildPayload(state, config, pdf);
-  try {
-    // text/plain 是 simple CORS request，不會觸發 preflight，Apps Script 預設會回 CORS header
-    const res = await fetch(SUBMISSION_ENDPOINT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload),
-    });
-    let pdfUrl = '';
-    try {
-      const data = await res.json();
-      if (data && typeof data.pdfUrl === 'string') pdfUrl = data.pdfUrl;
-    } catch {
-      // 讀不到 response（CORS 或 redirect），不阻擋成功流程
-    }
-    return { ok: true, pdf, pdfUrl };
-  } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : String(err), pdf };
+  const res = await apiFetch<{ ok: boolean; pdfUrl?: string }>('/api/booking', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  if (res.ok) {
+    return { ok: true, pdf, pdfUrl: res.data.pdfUrl ?? '' };
   }
+  return { ok: false, error: res.error, pdf };
 }
