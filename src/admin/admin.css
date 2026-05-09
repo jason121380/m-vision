@@ -2,6 +2,7 @@
 .admin{position:fixed;inset:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'PingFang TC','Helvetica Neue',sans-serif;z-index:9999;display:flex;flex-direction:column}
 .admin-top{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:var(--bg-glass);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
 .admin-top h1{font-size:16px;letter-spacing:.16em;font-weight:600}
+.admin-logo{height:32px;width:auto;display:block;object-fit:contain}
 .admin-top-right{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--ink-soft)}
 .admin-body{flex:1;display:grid;grid-template-columns:200px 1fr;min-height:0;overflow:hidden}
 .admin-side{border-right:1px solid var(--line);padding:14px 8px;overflow-y:auto;background:var(--bg-card)}

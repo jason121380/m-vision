@@ -64,7 +64,16 @@ export function AdminApp() {
   return (
     <div className="admin">
       <div className="admin-top">
-        <h1>M VISION 後台</h1>
+        <img
+          src="/black.jpg"
+          alt="M VISION"
+          className="admin-logo"
+          onError={(e) => {
+            const img = e.currentTarget;
+            if (img.src.endsWith('/logo.jpg')) return;
+            img.src = '/logo.jpg';
+          }}
+        />
         <div className="admin-top-right">
           <span>{auth.user.username}</span>
           <button className="admin-btn" onClick={onLogout}>登出</button>
