@@ -85,11 +85,19 @@ function findSheetLoose(ss, name) {
 
 function doPost(e) {
   try {
+    var data = JSON.parse(e.postData.contents);
+
+    // 新流程：後端 /api/booking 過來的請求，只請我們上 PDF 拿 URL。
+    // Sheet / bookings 寫入由後端 data.json 處理，這裡不重複寫。
+    if (data.action === 'pdfOnly') {
+      return handlePdfOnly(data);
+    }
+
+    // 舊流程（向下相容）：前台直接打 Apps Script 的完整提交
     Logger.log('[doPost] v2 start (with bookings sync)');
     if (!RESPONSE_SHEET_ID) {
       throw new Error('RESPONSE_SHEET_ID 尚未設定');
     }
-    var data = JSON.parse(e.postData.contents);
     Logger.log('[doPost] payload keys: ' + Object.keys(data).join(',') +
                ' / eventDate=' + data.eventDate +
                ' / svc=' + data.svc +
@@ -134,6 +142,29 @@ function doPost(e) {
       Logger.log('updateBookingsTab failed: ' + bookErr);
     }
 
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: true, pdfUrl: pdfUrl }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: false, error: String(err) }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// 後端 /api/booking 用：只上 PDF、回 url，不寫 Sheet 也不更新 bookings
+function handlePdfOnly(data) {
+  try {
+    Logger.log('[doPost] action=pdfOnly');
+    var pdfUrl = '';
+    if (data.pdfBase64 && PDF_FOLDER_ID) {
+      var folder = DriveApp.getFolderById(PDF_FOLDER_ID);
+      var bytes = Utilities.base64Decode(data.pdfBase64);
+      var blob = Utilities.newBlob(bytes, 'application/pdf', data.pdfFilename || 'contract.pdf');
+      var file = folder.createFile(blob);
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      pdfUrl = file.getUrl();
+    }
     return ContentService
       .createTextOutput(JSON.stringify({ ok: true, pdfUrl: pdfUrl }))
       .setMimeType(ContentService.MimeType.JSON);
