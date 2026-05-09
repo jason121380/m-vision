@@ -4,7 +4,7 @@ import { TrashIcon } from './TrashIcon';
 export type ColumnSpec<T> = {
   key: keyof T;
   label: string;
-  type: 'text' | 'number' | 'longtext' | 'enum' | 'password';
+  type: 'text' | 'number' | 'longtext' | 'enum' | 'password' | 'boolean';
   options?: string[]; // 給 enum 用：實際值
   optionLabels?: Record<string, string>; // value → 顯示文字（中文化）
   width?: string;
@@ -117,6 +117,18 @@ export function EditableTable<T extends Record<string, unknown>>({
                         value={String(val ?? '')}
                         onChange={(e) => update(idx, col.key, e.target.value)}
                         rows={2}
+                      />
+                    </td>
+                  );
+                }
+                if (col.type === 'boolean') {
+                  return (
+                    <td key={String(col.key)} style={{ textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(val ?? false)}
+                        onChange={(e) => update(idx, col.key, e.target.checked)}
+                        style={{ width: 'auto', cursor: 'pointer' }}
                       />
                     </td>
                   );

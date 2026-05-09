@@ -13,6 +13,7 @@ export type PhotographerRow = {
   photo: string;
   desc: string;
   portfolio: string;
+  visible?: boolean;
 };
 export type SettingsMap = Record<string, string>;
 export type MediaRow = {

@@ -35,6 +35,7 @@ export type PhotographerRow = {
   password?: string;
   // server GET 回傳的旗標，UI 用來顯示「已設定」placeholder
   hasPassword?: boolean;
+  visible?: boolean;
 };
 export type SettingRow = { key: string; value: string };
 export type BookingRow = {
