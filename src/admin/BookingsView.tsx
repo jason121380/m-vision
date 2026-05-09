@@ -26,6 +26,7 @@ export function BookingsView() {
   const [err, setErr] = useState('');
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -123,6 +124,19 @@ export function BookingsView() {
     setErr('');
   };
 
+  const syncToSheet = async () => {
+    if (syncing) return;
+    setSyncing(true);
+    setErr('');
+    const res = await api.post<{ count: number }>('/api/admin/sync-bookings', {});
+    setSyncing(false);
+    if (res.ok) {
+      alert(`已備份 ${res.data.count} 筆預約檔期到 Google Sheet`);
+    } else {
+      setErr(`備份失敗：${res.error}`);
+    }
+  };
+
   return (
     <div>
       <h2>預約檔期</h2>
@@ -134,6 +148,9 @@ export function BookingsView() {
       <div className="admin-toolbar">
         <button className="admin-btn primary" onClick={() => setDraft(blankDraft())}>
           + 新增檔期
+        </button>
+        <button className="admin-btn" onClick={syncToSheet} disabled={syncing || loading}>
+          {syncing ? '備份中…' : '同步到 Sheet'}
         </button>
         {err && <span className="admin-status err">{err}</span>}
       </div>

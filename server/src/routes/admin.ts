@@ -241,6 +241,32 @@ adminRoutes.delete('/bookings/:id', async (c) => {
   return c.json({ ok: true });
 });
 
+// 手動把目前 data.json 的 bookings 整份推到備份 Sheet。
+// 用於初次匯入或 Apps Script 失聯後補同步。回傳備份 Sheet 寫入幾筆。
+adminRoutes.post('/sync-bookings', async (c) => {
+  const endpoint = process.env.BOOKINGS_SYNC_ENDPOINT || process.env.PDF_UPLOAD_ENDPOINT;
+  if (!endpoint) {
+    return c.json({ error: '備份 endpoint 尚未設定（PDF_UPLOAD_ENDPOINT 或 BOOKINGS_SYNC_ENDPOINT）' }, 500);
+  }
+  const data = await read();
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'syncBookings', bookings: data.bookings }),
+    });
+    const json = (await res.json().catch(() => null)) as
+      | { ok?: boolean; count?: number; error?: string }
+      | null;
+    if (!json?.ok) {
+      return c.json({ error: json?.error ?? '備份 Sheet 沒有正確回應' }, 502);
+    }
+    return c.json({ ok: true, count: json.count ?? data.bookings.length });
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, 502);
+  }
+});
+
 // 從 Google Sheet 公開 CSV 整張覆蓋（bookings 是 upsert）
 // 任何分頁抓不到都會跳過，不會擋其他分頁繼續寫入
 adminRoutes.post('/import-sheet', async (c) => {
