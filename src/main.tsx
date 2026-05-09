@@ -9,7 +9,7 @@ const AdminApp = lazy(() =>
 
 const isAdmin =
   typeof window !== 'undefined' &&
-  new URLSearchParams(window.location.search).get('admin') === '1';
+  /^\/admin(\/|$)/.test(window.location.pathname);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
