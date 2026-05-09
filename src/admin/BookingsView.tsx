@@ -161,12 +161,12 @@ export function BookingsView() {
           <thead>
             <tr>
               <th>日期</th>
+              <th>動態主攝</th>
               <th>動態場次</th>
               <th>動態機位</th>
-              <th>動態主攝</th>
+              <th>平面主攝</th>
               <th>平面場次</th>
               <th>平面機位</th>
-              <th>平面主攝</th>
               <th>備註</th>
               <th className="actions">操作</th>
             </tr>
@@ -180,12 +180,12 @@ export function BookingsView() {
             {rows.map((b) => (
               <tr key={b.id}>
                 <td><strong>{b.date}</strong></td>
+                <td>{renderLeads('video', b.videoLeads)}</td>
                 <td>{b.videoSlots}</td>
                 <td>{b.videoCamsUsed}</td>
-                <td>{renderLeads('video', b.videoLeads)}</td>
+                <td>{renderLeads('photo', b.photoLeads)}</td>
                 <td>{b.photoSlots}</td>
                 <td>{b.photoCamsUsed}</td>
-                <td>{renderLeads('photo', b.photoLeads)}</td>
                 <td>{b.notes}</td>
                 <td className="actions">
                   <button
