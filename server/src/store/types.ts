@@ -52,6 +52,7 @@ export type SubmissionRow = {
   raw: unknown;
 };
 export type AdminUser = { id: number; username: string; passwordHash: string };
+export type SessionRow = { token: string; userId: number; expiresAt: number };
 
 export type DataShape = {
   services: ServiceRow[];
@@ -64,6 +65,7 @@ export type DataShape = {
   bookings: BookingRow[];
   submissions: SubmissionRow[];
   admins: AdminUser[];
+  sessions: SessionRow[];
   nextSubmissionId: number;
   nextAdminId: number;
 };

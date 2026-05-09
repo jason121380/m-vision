@@ -30,7 +30,7 @@ authRoutes.post('/login', async (c) => {
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) return c.json({ error: 'invalid credentials' }, 401);
 
-  const { token, expiresAt } = createSession(user.id);
+  const { token, expiresAt } = await createSession(user.id);
   setCookie(c, SESSION_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -43,14 +43,14 @@ authRoutes.post('/login', async (c) => {
 
 authRoutes.post('/logout', async (c) => {
   const token = getCookie(c, SESSION_COOKIE) ?? '';
-  destroySession(token);
+  await destroySession(token);
   deleteCookie(c, SESSION_COOKIE, { path: '/' });
   return c.json({ ok: true });
 });
 
 authRoutes.get('/me', async (c) => {
   const token = getCookie(c, SESSION_COOKIE) ?? '';
-  const sess = findSession(token);
+  const sess = await findSession(token);
   if (!sess) return c.json({ user: null });
   const data = await read();
   const user = data.admins.find((u) => u.id === sess.userId);
