@@ -250,13 +250,14 @@ function Section({ tab }: { tab: TabKey }) {
           { key: 'name', label: '名字', type: 'text' },
           { key: 'role', label: '角色', type: 'text' },
           { key: 'price', label: '價格', type: 'number', width: '10%' },
+          { key: 'visible', label: '顯示於前台', type: 'boolean', width: '10%' },
           { key: 'username', label: '登入帳號', type: 'text' },
           { key: 'password', label: '登入密碼', type: 'password' },
           { key: 'photo', label: '頭像', type: 'text' },
           { key: 'desc', label: '介紹', type: 'longtext' },
           { key: 'portfolio', label: '作品集', type: 'text' },
         ]}
-        blank={() => ({ type: 'video', key: genKey(), name: '', role: '', price: 1000, photo: '', desc: '', portfolio: '', username: '', password: '' })}
+        blank={() => ({ type: 'video', key: genKey(), name: '', role: '', price: 1000, photo: '', desc: '', portfolio: '', username: '', password: '', visible: true })}
         locked={(r) => r.key === 'any'}
       />
     );

@@ -132,6 +132,20 @@ export function Editor<T extends Record<string, unknown>>({
       >
         {draft && columns.map((col) => {
           const val = draft[col.key];
+          if (col.type === 'boolean') {
+            return (
+              <div className="adm-field adm-field-check" key={String(col.key)}>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={Boolean(val ?? false)}
+                    onChange={(e) => patchDraft(col.key, e.target.checked)}
+                  />
+                  {col.label}
+                </label>
+              </div>
+            );
+          }
           return (
             <div className="adm-field" key={String(col.key)}>
               <label>{col.label}</label>

@@ -93,6 +93,8 @@
 .adm-field textarea{resize:vertical;min-height:60px;font-family:inherit}
 .adm-field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .adm-field-row .adm-field{margin-bottom:14px}
+.adm-field-check label{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13.5px;color:var(--ink);font-weight:500}
+.adm-field-check input[type=checkbox]{width:auto;margin:0;cursor:pointer;width:18px;height:18px}
 .adm-checkbox-group{display:flex;flex-wrap:wrap;gap:8px}
 .adm-checkbox-item{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid var(--line-strong);border-radius:var(--r-pill);font-size:13px;cursor:pointer;background:var(--bg-card);color:var(--ink-soft);transition:all .15s var(--ease);user-select:none}
 .adm-checkbox-item:hover{border-color:var(--accent);color:var(--accent)}

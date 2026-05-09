@@ -18,6 +18,8 @@ export type PhotographerRow = {
   portfolio: string;
   username?: string;
   passwordHash?: string;
+  // 是否顯示於前台選單；undefined 視為 true（保留舊資料行為）
+  visible?: boolean;
 };
 export type SettingsMap = Record<string, string>;
 export type BookingRow = {

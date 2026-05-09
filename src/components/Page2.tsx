@@ -15,9 +15,11 @@ export function Page2({ state, update, config }: Props) {
   const isP = state.svc === 'photo' || state.svc === 'both';
   const dateKey = ymd(state.year, state.month, state.day);
 
-  // 隱藏「無選（key=none）」那一列；保留「不指定（輪班）」
-  const videoPhotographers = config.photographers.filter((p) => p.type === 'video' && p.key !== 'none');
-  const photoPhotographers = config.photographers.filter((p) => p.type === 'photo' && p.key !== 'none');
+  // 隱藏「無選（key=none）」與「visible=false」的攝影師；保留「不指定（輪班）」
+  const isShown = (p: { key: string; visible?: boolean }) =>
+    p.key !== 'none' && p.visible !== false;
+  const videoPhotographers = config.photographers.filter((p) => p.type === 'video' && isShown(p));
+  const photoPhotographers = config.photographers.filter((p) => p.type === 'photo' && isShown(p));
 
   const renderPhotographer = (
     p: (typeof videoPhotographers)[number],
