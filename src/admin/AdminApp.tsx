@@ -51,8 +51,10 @@ type TabKey = SettingsTabKey | 'bookings' | 'submissions' | 'announcement';
 
 export function AdminApp() {
   const [auth, setAuth] = useState<AuthState>({ status: 'checking' });
-  const [tab, setTab] = useState<TabKey>('settings');
-  const [settingsExpanded, setSettingsExpanded] = useState(true);
+  // 預設停在「預約檔期」（最常打開要看的那頁）
+  const [tab, setTab] = useState<TabKey>('bookings');
+  // 既然不在設定群組裡，就先收合，使用者需要時再展開
+  const [settingsExpanded, setSettingsExpanded] = useState(false);
   const [theme, setTheme] = useState<Theme>(readTheme);
   const inSettings = SETTINGS_SUBTABS.some((t) => t.key === tab);
 
