@@ -154,6 +154,17 @@ adminRoutes.put('/photographers', async (c) => {
   const parsed = photographersSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: 'bad payload', issues: parsed.error.issues }, 400);
 
+  // 唯一性檢查：username 非空時不能重複（重複會讓只有第一筆登得進去）
+  const seenUser = new Set<string>();
+  for (const r of parsed.data) {
+    const u = (r.username ?? '').trim();
+    if (!u) continue;
+    if (seenUser.has(u)) {
+      return c.json({ error: `登入帳號重複：「${u}」每位攝影師必須唯一` }, 400);
+    }
+    seenUser.add(u);
+  }
+
   // 把現有的 passwordHash 用 key 索引備好。送進來的 row 若 password 留空，保留舊 hash；
   // 有新 password 就 bcrypt hash 後覆蓋。
   const cur = await read();
