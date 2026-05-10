@@ -20,6 +20,8 @@ export type PhotographerRow = {
   passwordHash?: string;
   // 是否顯示於前台選單；undefined 視為 true（保留舊資料行為）
   visible?: boolean;
+  // 最高主管：登入 /booking 時可看到所有人的預約檔期，不只自己被綁的
+  isSuperUser?: boolean;
 };
 export type SettingsMap = Record<string, string>;
 export type MediaRow = {

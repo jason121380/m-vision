@@ -5,7 +5,7 @@ import { PushToggle } from '../components/PushToggle';
 import { setupBadgeClearing } from '../lib/push';
 import './booking.css';
 
-type User = { key: string; name: string; role: string; photo?: string };
+type User = { key: string; name: string; role: string; photo?: string; isSuperUser?: boolean };
 type LeadInfo = {
   key: string;
   name: string;
@@ -336,7 +336,10 @@ function ScheduleView({
             </div>
           )}
 
-          <h2>我的預約檔期</h2>
+          <h2>
+            {user.isSuperUser ? '全部預約檔期' : '我的預約檔期'}
+            {user.isSuperUser && <span className="bk-super-badge" title="最高主管：可看到所有攝影師的檔期">主管模式</span>}
+          </h2>
 
           {loading && <div className="bk-status">載入中…</div>}
           {err && <div className="bk-status err">{err}</div>}

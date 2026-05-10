@@ -19,7 +19,8 @@
 .bk-ptr.ready{color:var(--accent)}
 @keyframes bkPtrSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 .bk-inner{max-width:600px;margin:0 auto;width:100%;box-sizing:border-box}
-.bk-content h2{font-size:20px;letter-spacing:.1em;margin-bottom:14px;font-weight:600}
+.bk-content h2{font-size:20px;letter-spacing:.1em;margin-bottom:14px;font-weight:600;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.bk-super-badge{display:inline-block;font-size:11px;letter-spacing:.06em;font-weight:600;padding:3px 10px;border-radius:999px;background:linear-gradient(135deg,#6e5ac8,#d265a0);color:#fff}
 .bk-status{font-size:13px;color:var(--ink-muted);text-align:center;padding:20px}
 .bk-status.err{color:#ff8a8a}
 .bk-loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);background:var(--bg);font-size:14px;letter-spacing:.1em}
