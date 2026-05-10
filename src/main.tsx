@@ -18,16 +18,28 @@ const path = typeof window !== 'undefined' ? window.location.pathname : '';
 const isAdmin = /^\/admin(\/|$)/.test(path);
 const isBooking = /^\/booking(\/|$)/.test(path);
 
-// PWA：在 /admin 切換成 admin manifest，「加入主畫面」就會以 /admin 為 start_url
+// PWA：在 /admin 或 /booking 切換成對應 manifest，「加入主畫面」就會落在
+// 該頁的 start_url，不會被預設 manifest 的 start_url=/ 把人拉回首頁
 if (typeof document !== 'undefined') {
   const link = document.querySelector('link[rel="manifest"]') as HTMLLinkElement | null;
   if (link) {
-    link.href = isAdmin ? '/admin.webmanifest' : '/manifest.webmanifest';
+    link.href = isAdmin
+      ? '/admin.webmanifest'
+      : isBooking
+        ? '/booking.webmanifest'
+        : '/manifest.webmanifest';
   }
   if (isAdmin) {
     document.title = 'M 視覺後台';
     const titleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
     if (titleMeta) titleMeta.setAttribute('content', 'M 視覺後台');
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeMeta) themeMeta.setAttribute('content', '#000000');
+  }
+  if (isBooking) {
+    document.title = 'M 視覺攝影師';
+    const titleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+    if (titleMeta) titleMeta.setAttribute('content', 'M 視覺攝影師');
     const themeMeta = document.querySelector('meta[name="theme-color"]');
     if (themeMeta) themeMeta.setAttribute('content', '#000000');
   }

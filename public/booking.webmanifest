@@ -1,0 +1,26 @@
+{
+  "name": "M 視覺攝影師",
+  "short_name": "M 視覺攝影師",
+  "description": "M 視覺影像記錄公司攝影師專區",
+  "start_url": "/booking",
+  "scope": "/booking",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "lang": "zh-TW",
+  "icons": [
+    {
+      "src": "/black.jpg",
+      "sizes": "any",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/black.jpg",
+      "sizes": "any",
+      "type": "image/jpeg",
+      "purpose": "maskable"
+    }
+  ]
+}
