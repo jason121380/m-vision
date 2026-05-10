@@ -59,6 +59,8 @@ const photographersSchema = z.array(
     photo: z.string().optional().default(''),
     desc: z.string().optional().default(''),
     portfolio: z.string().optional().default(''),
+    portfolioVideo: z.string().optional().default(''),
+    portfolioPhoto: z.string().optional().default(''),
     username: z.string().optional().default(''),
     // 從 admin UI 進來時是明碼；存進 data.json 之前 hash 成 passwordHash
     password: z.string().optional().default(''),
@@ -156,9 +158,16 @@ adminRoutes.put('/photographers', async (c) => {
   const parsed = photographersSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: 'bad payload', issues: parsed.error.issues }, 400);
 
-  // 不再嚴格擋同 username：允許「同一個人在不同 type 各有一筆」共用同帳號。
-  // /api/staff/auth/login + /api/staff/schedule 已改成把同 username 的所有 row
-  // 視為同一人，把每個 row 的 key 都當「myKeys」過濾預約。
+  // 唯一性檢查：每位攝影師只能有一組登入帳號（一人一 row）
+  const seenUser = new Set<string>();
+  for (const r of parsed.data) {
+    const u = (r.username ?? '').trim();
+    if (!u) continue;
+    if (seenUser.has(u)) {
+      return c.json({ error: `登入帳號重複：「${u}」每位攝影師只能有一組登入帳密` }, 400);
+    }
+    seenUser.add(u);
+  }
 
   // 把現有的 passwordHash 用 key 索引備好。送進來的 row 若 password 留空，保留舊 hash；
   // 有新 password 就 bcrypt hash 後覆蓋。
@@ -185,6 +194,8 @@ adminRoutes.put('/photographers', async (c) => {
       photo: r.photo,
       desc: r.desc,
       portfolio: r.portfolio,
+      portfolioVideo: r.portfolioVideo || undefined,
+      portfolioPhoto: r.portfolioPhoto || undefined,
       username: r.username || undefined,
       passwordHash,
       visible: r.visible,

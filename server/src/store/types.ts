@@ -17,7 +17,12 @@ export type PhotographerRow = {
   price: number;
   photo: string;
   desc: string;
+  // 舊版欄位，新版改用 portfolioVideo / portfolioPhoto；保留為 fallback 顯示
   portfolio: string;
+  // 動態作品集連結；type='both' / 'video' 用得到
+  portfolioVideo?: string;
+  // 平面作品集連結；type='both' / 'photo' 用得到
+  portfolioPhoto?: string;
   username?: string;
   passwordHash?: string;
   // 是否顯示於前台選單；undefined 視為 true（保留舊資料行為）

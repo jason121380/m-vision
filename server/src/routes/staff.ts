@@ -24,22 +24,17 @@ staffRoutes.post('/auth/login', async (c) => {
   const { username, password } = parsed.data;
 
   const data = await read();
-  // 同 username 可能對應多筆 row（同一個人 video + photo 各一筆 / 或 type=both 一筆）。
-  // 任一筆的 hash 對得上密碼就算登入成功；session 記第一筆的 key（其餘 key 在 schedule 那邊收回來）
-  const candidates = data.photographers.filter(
+  // 一人一 row：username 唯一，直接 find 第一筆
+  const photographer = data.photographers.find(
     (p) => p.username === username && p.passwordHash,
   );
-  if (candidates.length === 0) return c.json({ error: 'invalid credentials' }, 401);
-  let matched: typeof candidates[number] | undefined;
-  for (const cand of candidates) {
-    if (await bcrypt.compare(password, cand.passwordHash!)) {
-      matched = cand;
-      break;
-    }
+  if (!photographer || !photographer.passwordHash) {
+    return c.json({ error: 'invalid credentials' }, 401);
   }
-  if (!matched) return c.json({ error: 'invalid credentials' }, 401);
+  const ok = await bcrypt.compare(password, photographer.passwordHash);
+  if (!ok) return c.json({ error: 'invalid credentials' }, 401);
 
-  const { token, expiresAt } = await createStaffSession(matched.key);
+  const { token, expiresAt } = await createStaffSession(photographer.key);
   setCookie(c, STAFF_SESSION_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -50,10 +45,10 @@ staffRoutes.post('/auth/login', async (c) => {
   return c.json({
     ok: true,
     user: {
-      key: matched.key,
-      name: matched.name,
-      role: matched.role,
-      isSuperUser: candidates.some((p) => p.isSuperUser === true),
+      key: photographer.key,
+      name: photographer.name,
+      role: photographer.role,
+      isSuperUser: photographer.isSuperUser === true,
     },
   });
 });
@@ -72,17 +67,13 @@ staffRoutes.get('/auth/me', async (c) => {
   const data = await read();
   const ph = data.photographers.find((p) => p.key === sess.photographerKey);
   if (!ph) return c.json({ user: null });
-  // 同 username 的所有 row 任一個 isSuperUser=true 就視為主管
-  const sameUser = ph.username
-    ? data.photographers.filter((p) => p.username === ph.username)
-    : [ph];
   return c.json({
     user: {
       key: ph.key,
       name: ph.name,
       role: ph.role,
       photo: ph.photo,
-      isSuperUser: sameUser.some((p) => p.isSuperUser === true),
+      isSuperUser: ph.isSuperUser === true,
     },
   });
 });
@@ -155,17 +146,7 @@ staffRoutes.get('/schedule', async (c) => {
   const sess = await findStaffSession(token);
   if (!sess) return c.json({ error: 'unauthorized' }, 401);
   const data = await read();
-  const sessionKey = sess.photographerKey;
-  const sessionPh = data.photographers.find((p) => p.key === sessionKey);
-
-  // 把同 username 的所有 row 都當「我」(同一人在 video / photo 各有一筆 row 時)
-  const myKeys = new Set<string>([sessionKey]);
-  if (sessionPh?.username) {
-    for (const p of data.photographers) {
-      if (p.username === sessionPh.username) myKeys.add(p.key);
-    }
-  }
-  const isMyKey = (k: string) => myKeys.has(k);
+  const myKey = sess.photographerKey;
 
   const photoById = new Map(data.photographers.map((p) => [p.key, p]));
   const expandLeads = (keys: string[]) =>
@@ -178,26 +159,25 @@ staffRoutes.get('/schedule', async (c) => {
           name: p?.name ?? k,
           role: p?.role ?? '',
           photo: p?.photo ?? '',
-          isMe: isMyKey(k),
+          isMe: k === myKey,
         };
       });
 
-  // 最高主管：同 username 任一筆有 isSuperUser → 主管 → 看全部
-  const isSuperUser = sessionPh?.username
-    ? data.photographers.some((p) => p.username === sessionPh.username && p.isSuperUser)
-    : sessionPh?.isSuperUser === true;
+  // 最高主管 → 看全部；一般攝影師 → 只看自己被綁的
+  const me = data.photographers.find((p) => p.key === myKey);
+  const isSuperUser = me?.isSuperUser === true;
   const filtered = isSuperUser
     ? data.bookings
-    : data.bookings.filter((b) => b.videoLeads.some(isMyKey) || b.photoLeads.some(isMyKey));
+    : data.bookings.filter((b) => b.videoLeads.includes(myKey) || b.photoLeads.includes(myKey));
 
   // 不合併：每一筆 booking row 都當獨立的一場顯示（同日多場是合理的，例如午宴 + 晚宴）
   const dates = filtered
     .map((b) => ({
       date: normalizeDate(b.date),
       // 主管模式下 asVideo / asPhoto 反映「該 booking 是動 / 平」（看 slots），
-      // 一般攝影師則反映「我（同 username 任一 key）是不是這場的主攝」
-      asVideo: isSuperUser ? b.videoSlots > 0 : b.videoLeads.some(isMyKey),
-      asPhoto: isSuperUser ? b.photoSlots > 0 : b.photoLeads.some(isMyKey),
+      // 一般攝影師則反映「我是不是這場的主攝」
+      asVideo: isSuperUser ? b.videoSlots > 0 : b.videoLeads.includes(myKey),
+      asPhoto: isSuperUser ? b.photoSlots > 0 : b.photoLeads.includes(myKey),
       notes: b.notes ?? '',
       videoSlots: b.videoSlots,
       photoSlots: b.photoSlots,

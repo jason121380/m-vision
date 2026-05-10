@@ -14,7 +14,10 @@ export type PhotographerRow = {
   price: number;
   photo: string;
   desc: string;
+  // 舊版欄位，新版改 portfolioVideo / portfolioPhoto。保留作為前台 fallback
   portfolio: string;
+  portfolioVideo?: string;
+  portfolioPhoto?: string;
   visible?: boolean;
 };
 export type SettingsMap = Record<string, string>;
