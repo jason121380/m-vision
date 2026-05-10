@@ -8,7 +8,16 @@
 .bk-top-right{display:flex;gap:8px;align-items:center}
 .bk-theme-toggle{font-size:16px;line-height:1;padding:6px 12px;min-width:36px}
 .bk-floating-theme{position:fixed;top:14px;right:14px;z-index:100}
-.bk-content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px;box-sizing:border-box}
+.bk-content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px;box-sizing:border-box;overscroll-behavior-y:contain}
+
+/* Pull-to-refresh */
+.bk-ptr{display:flex;align-items:flex-end;justify-content:center;overflow:hidden;color:var(--ink-muted);font-size:12px;letter-spacing:.05em;transition:height .18s var(--ease)}
+.bk-ptr-inner{display:inline-flex;align-items:center;gap:6px;padding-bottom:8px;font-weight:500}
+.bk-ptr-icon{display:inline-block;font-size:14px;line-height:1;transition:transform .15s var(--ease)}
+.bk-ptr-icon.spin{animation:bkPtrSpin .9s linear infinite}
+.bk-ptr.ready .bk-ptr-icon{color:var(--accent)}
+.bk-ptr.ready{color:var(--accent)}
+@keyframes bkPtrSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 .bk-inner{max-width:600px;margin:0 auto;width:100%;box-sizing:border-box}
 .bk-content h2{font-size:20px;letter-spacing:.1em;margin-bottom:14px;font-weight:600}
 .bk-status{font-size:13px;color:var(--ink-muted);text-align:center;padding:20px}
