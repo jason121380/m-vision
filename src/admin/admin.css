@@ -55,6 +55,8 @@
 .adt .move:hover{color:var(--accent);border-color:var(--accent)}
 .adt .move:disabled{opacity:.3;cursor:not-allowed}
 .adt-empty{padding:40px;text-align:center;color:var(--ink-muted);font-size:13px}
+.adt .adt-readonly{color:var(--ink-muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px}
+.adm-readonly-value{padding:10px 12px;border:1px dashed var(--line);border-radius:8px;color:var(--ink-muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:transparent}
 .adt-no{color:var(--ink-muted);font-variant-numeric:tabular-nums;font-size:12px;text-align:center}
 /* 已過期的列：整列灰一階 */
 .adt-row-past td{color:var(--ink-muted);background:transparent;opacity:.55}

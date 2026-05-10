@@ -298,6 +298,7 @@ function Section({ tab }: { tab: TabKey }) {
         columns={[
           { key: 'type', label: '類型', type: 'enum', options: ['video', 'photo'], optionLabels: { video: '動態', photo: '平面' }, width: '10%' },
           { key: 'name', label: '名字', type: 'text' },
+          { key: 'key', label: 'Key', type: 'readonly', width: '12%' },
           { key: 'role', label: '角色', type: 'text' },
           { key: 'price', label: '價格', type: 'number', width: '10%' },
           { key: 'visible', label: '顯示於前台', type: 'boolean', width: '10%' },
