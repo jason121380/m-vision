@@ -68,10 +68,10 @@
 
 /* Tabs */
 .bk-tabs{display:flex;gap:4px;margin:24px 0 10px;background:var(--bg-card);padding:4px;border-radius:999px;border:1px solid var(--line);width:fit-content}
-.bk-tab{padding:7px 16px;background:transparent;border:none;color:var(--ink-muted);font-size:13px;font-family:inherit;cursor:pointer;border-radius:999px;font-weight:500;display:inline-flex;align-items:center;gap:6px;transition:all .15s var(--ease)}
+.bk-tab{padding:7px 16px;background:transparent;border:none;color:var(--ink-muted);font-size:13px;font-family:inherit;cursor:pointer;border-radius:999px;font-weight:500;display:inline-flex;align-items:center;gap:6px;transition:all .15s var(--ease);-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .bk-tab:hover{color:var(--ink)}
 .bk-tab.on{background:var(--accent);color:#fff}
-.bk-tab-count{font-size:11px;background:rgba(0,0,0,.18);color:inherit;padding:1px 7px;border-radius:999px;font-weight:600;min-width:20px;text-align:center}
+.bk-tab-count{font-size:11px;background:rgba(0,0,0,.18);color:inherit;padding:1px 7px;border-radius:999px;font-weight:600;min-width:20px;text-align:center;pointer-events:none}
 .bk-tab.on .bk-tab-count{background:rgba(255,255,255,.22);color:#fff}
 
 /* 拍攝團隊 */

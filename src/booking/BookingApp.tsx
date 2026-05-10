@@ -229,6 +229,7 @@ function ScheduleView({
 
               <div className="bk-tabs" role="tablist">
                 <button
+                  type="button"
                   className={`bk-tab${tab === 'upcoming' ? ' on' : ''}`}
                   onClick={() => setTab('upcoming')}
                   role="tab"
@@ -237,6 +238,7 @@ function ScheduleView({
                   即將到來 <span className="bk-tab-count">{upcoming.length}</span>
                 </button>
                 <button
+                  type="button"
                   className={`bk-tab${tab === 'past' ? ' on' : ''}`}
                   onClick={() => setTab('past')}
                   role="tab"
