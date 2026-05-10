@@ -311,17 +311,18 @@ function Section({ tab }: { tab: TabKey }) {
         blank={() => ({ type: 'video', key: genKey(), name: '', role: '', price: 1000, photo: '', desc: '', portfolio: '', username: '', password: '', visible: true, isSuperUser: false })}
         locked={(r) => r.key === 'any'}
         validate={(rows) => {
-          // 登入帳號非空時不能重複，否則只有第一筆能登入
-          const seen = new Map<string, number>();
+          // 帳號重複是允許的（代表同一人在不同 type 各有一筆 row）。
+          // 但若兩列都填了登入密碼且不同，bcrypt hash 會被後寫覆蓋 → 提醒一下
+          const passByUser = new Map<string, string>();
           for (let i = 0; i < rows.length; i++) {
             const u = String(rows[i]!.username ?? '').trim();
-            if (!u) continue;
-            if (seen.has(u)) {
-              const first = seen.get(u)! + 1;
-              const dup = i + 1;
-              return `登入帳號「${u}」重複（第 ${first} 列與第 ${dup} 列），每位攝影師必須唯一`;
+            const p = String(rows[i]!.password ?? '');
+            if (!u || !p) continue;
+            const prev = passByUser.get(u);
+            if (prev && prev !== p) {
+              return `登入帳號「${u}」共用，但你在多列填了不同的登入密碼，會以最後一筆為準。請統一只填一次。`;
             }
-            seen.set(u, i);
+            passByUser.set(u, p);
           }
           return null;
         }}
