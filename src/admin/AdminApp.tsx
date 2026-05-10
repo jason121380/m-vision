@@ -312,17 +312,18 @@ function Section({ tab }: { tab: TabKey }) {
         blank={() => ({ type: 'video', key: genKey(), name: '', role: '', price: 1000, photo: '', desc: '', portfolio: '', username: '', password: '', visible: true, isSuperUser: false })}
         locked={(r) => r.key === 'any'}
         validate={(rows) => {
-          // 登入帳號非空時不能重複，否則只有第一筆能登入
-          const seen = new Map<string, number>();
+          // 登入帳號非空時不能重複，否則只有第一筆能登入。
+          // 同一個 key（同一人開動 / 平兩筆）允許共用同一個帳號。
+          const seen = new Map<string, { idx: number; key: string }>();
           for (let i = 0; i < rows.length; i++) {
             const u = String(rows[i]!.username ?? '').trim();
             if (!u) continue;
-            if (seen.has(u)) {
-              const first = seen.get(u)! + 1;
-              const dup = i + 1;
-              return `登入帳號「${u}」重複（第 ${first} 列與第 ${dup} 列），每位攝影師必須唯一`;
+            const k = String(rows[i]!.key ?? '');
+            const prev = seen.get(u);
+            if (prev && prev.key !== k) {
+              return `登入帳號「${u}」重複（第 ${prev.idx + 1} 列與第 ${i + 1} 列），不同攝影師不能共用帳號`;
             }
-            seen.set(u, i);
+            if (!prev) seen.set(u, { idx: i, key: k });
           }
           return null;
         }}

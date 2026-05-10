@@ -155,15 +155,16 @@ adminRoutes.put('/photographers', async (c) => {
   const parsed = photographersSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: 'bad payload', issues: parsed.error.issues }, 400);
 
-  // 唯一性檢查：username 非空時不能重複（重複會讓只有第一筆登得進去）
-  const seenUser = new Set<string>();
+  // 唯一性檢查：username 非空時不同 key 不能共用（同 key 代表同一人開動 / 平兩筆，允許共用）
+  const seenUser = new Map<string, string>();
   for (const r of parsed.data) {
     const u = (r.username ?? '').trim();
     if (!u) continue;
-    if (seenUser.has(u)) {
-      return c.json({ error: `登入帳號重複：「${u}」每位攝影師必須唯一` }, 400);
+    const prevKey = seenUser.get(u);
+    if (prevKey !== undefined && prevKey !== r.key) {
+      return c.json({ error: `登入帳號重複：「${u}」不同攝影師不能共用帳號` }, 400);
     }
-    seenUser.add(u);
+    if (prevKey === undefined) seenUser.set(u, r.key);
   }
 
   // 把現有的 passwordHash 用 key 索引備好。送進來的 row 若 password 留空，保留舊 hash；
