@@ -296,33 +296,46 @@ function Section({ tab }: { tab: TabKey }) {
         modalAdd
         addLabel="新增攝影師"
         columns={[
-          { key: 'type', label: '類型', type: 'enum', options: ['video', 'photo'], optionLabels: { video: '動態', photo: '平面' }, width: '10%' },
-          { key: 'name', label: '名字', type: 'text' },
-          { key: 'key', label: 'Key', type: 'readonly', width: '12%' },
-          { key: 'role', label: '角色', type: 'text' },
-          { key: 'price', label: '價格', type: 'number', width: '10%' },
-          { key: 'visible', label: '顯示於前台', type: 'boolean', width: '10%' },
-          { key: 'isSuperUser', label: '最高主管', type: 'boolean', width: '10%' },
-          { key: 'username', label: '登入帳號', type: 'text' },
-          { key: 'password', label: '登入密碼', type: 'password' },
-          { key: 'photo', label: '頭像', type: 'text' },
-          { key: 'desc', label: '介紹', type: 'longtext' },
-          { key: 'portfolio', label: '作品集', type: 'text' },
+          { key: 'type', label: '類型', type: 'enum', options: ['video', 'photo'], optionLabels: { video: '動態', photo: '平面' }, width: '7%' },
+          { key: 'name', label: '名字', type: 'text', width: '8%' },
+          { key: 'key', label: 'Key', type: 'readonly', width: '9%' },
+          { key: 'role', label: '角色', type: 'text', width: '8%' },
+          { key: 'price', label: '價格', type: 'number', width: '6%' },
+          { key: 'visible', label: '顯示於前台', type: 'boolean', width: '7%' },
+          { key: 'isSuperUser', label: '最高主管', type: 'boolean', width: '7%' },
+          { key: 'username', label: '登入帳號', type: 'text', width: '8%' },
+          { key: 'password', label: '登入密碼', type: 'password', width: '8%' },
+          { key: 'photo', label: '頭像', type: 'text', width: '10%' },
+          { key: 'desc', label: '介紹', type: 'longtext', width: '12%' },
+          { key: 'portfolio', label: '作品集', type: 'text', width: '10%' },
         ]}
         blank={() => ({ type: 'video', key: genKey(), name: '', role: '', price: 1000, photo: '', desc: '', portfolio: '', username: '', password: '', visible: true, isSuperUser: false })}
         locked={(r) => r.key === 'any'}
         validate={(rows) => {
-          // 登入帳號非空時不能重複，否則只有第一筆能登入
-          const seen = new Map<string, number>();
+          // 登入帳號非空時不能重複，否則只有第一筆能登入。
+          // 同一個 key（同一人開動 / 平兩筆）允許共用同一個帳號。
+          const seen = new Map<string, { idx: number; key: string }>();
           for (let i = 0; i < rows.length; i++) {
             const u = String(rows[i]!.username ?? '').trim();
             if (!u) continue;
-            if (seen.has(u)) {
-              const first = seen.get(u)! + 1;
-              const dup = i + 1;
-              return `登入帳號「${u}」重複（第 ${first} 列與第 ${dup} 列），每位攝影師必須唯一`;
+            const k = String(rows[i]!.key ?? '');
+            const prev = seen.get(u);
+            if (prev && prev.key !== k) {
+              return `登入帳號「${u}」重複（第 ${prev.idx + 1} 列與第 ${i + 1} 列），不同攝影師不能共用帳號`;
             }
-            seen.set(u, i);
+            if (!prev) seen.set(u, { idx: i, key: k });
+          }
+          // 同一個 key 多筆 row 的「新密碼」必須一致（空字串視為不變更，跳過）
+          const pwdByKey = new Map<string, { idx: number; pwd: string }>();
+          for (let i = 0; i < rows.length; i++) {
+            const p = String(rows[i]!.password ?? '');
+            if (!p) continue;
+            const k = String(rows[i]!.key ?? '');
+            const prev = pwdByKey.get(k);
+            if (prev && prev.pwd !== p) {
+              return `同一位攝影師（第 ${prev.idx + 1} 列與第 ${i + 1} 列，key=${k}）的新密碼不一致，請填相同密碼或留空保留舊密碼`;
+            }
+            if (!prev) pwdByKey.set(k, { idx: i, pwd: p });
           }
           return null;
         }}
