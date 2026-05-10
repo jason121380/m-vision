@@ -291,7 +291,7 @@ function Section({ tab }: { tab: TabKey }) {
     return (
       <Editor<PhotographerRow>
         title="攝影師"
-        hint="客戶第二頁選的指定攝影師，類型分動態 / 平面分開列。同一個人若既能拍動態又能拍平面 → 開兩筆。每個類型第一筆「不指定（輪班）」是預設選項不可刪除。頭像可貼 Drive 分享連結或外部 https 圖片網址。設定帳號 / 密碼後，攝影師可到 /booking 用該帳密登入查看自己的預約檔期。"
+        hint="客戶第二頁選的指定攝影師，類型分動態 / 平面分開列。同一個人若既能拍動態又能拍平面 → 開兩筆。每個類型第一筆「不指定（輪班）」是預設選項不可刪除。頭像可貼 Drive 分享連結或外部 https 圖片網址。設定帳號 / 密碼後，攝影師可到 /booking 用該帳密登入查看自己的預約檔期。「最高主管」勾起來的人登入後會看到所有攝影師的檔期，不只自己被綁的。"
         path="photographers"
         modalAdd
         addLabel="新增攝影師"
@@ -301,13 +301,14 @@ function Section({ tab }: { tab: TabKey }) {
           { key: 'role', label: '角色', type: 'text' },
           { key: 'price', label: '價格', type: 'number', width: '10%' },
           { key: 'visible', label: '顯示於前台', type: 'boolean', width: '10%' },
+          { key: 'isSuperUser', label: '最高主管', type: 'boolean', width: '10%' },
           { key: 'username', label: '登入帳號', type: 'text' },
           { key: 'password', label: '登入密碼', type: 'password' },
           { key: 'photo', label: '頭像', type: 'text' },
           { key: 'desc', label: '介紹', type: 'longtext' },
           { key: 'portfolio', label: '作品集', type: 'text' },
         ]}
-        blank={() => ({ type: 'video', key: genKey(), name: '', role: '', price: 1000, photo: '', desc: '', portfolio: '', username: '', password: '', visible: true })}
+        blank={() => ({ type: 'video', key: genKey(), name: '', role: '', price: 1000, photo: '', desc: '', portfolio: '', username: '', password: '', visible: true, isSuperUser: false })}
         locked={(r) => r.key === 'any'}
         validate={(rows) => {
           // 登入帳號非空時不能重複，否則只有第一筆能登入

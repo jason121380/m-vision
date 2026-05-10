@@ -62,6 +62,7 @@ const photographersSchema = z.array(
     // 從 admin UI 進來時是明碼；存進 data.json 之前 hash 成 passwordHash
     password: z.string().optional().default(''),
     visible: z.boolean().optional().default(true),
+    isSuperUser: z.boolean().optional().default(false),
   }),
 );
 const settingsSchema = z.array(
@@ -193,6 +194,7 @@ adminRoutes.put('/photographers', async (c) => {
       username: r.username || undefined,
       passwordHash,
       visible: r.visible,
+      isSuperUser: r.isSuperUser,
     });
   }
 

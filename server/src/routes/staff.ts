@@ -43,7 +43,12 @@ staffRoutes.post('/auth/login', async (c) => {
   });
   return c.json({
     ok: true,
-    user: { key: photographer.key, name: photographer.name, role: photographer.role },
+    user: {
+      key: photographer.key,
+      name: photographer.name,
+      role: photographer.role,
+      isSuperUser: photographer.isSuperUser === true,
+    },
   });
 });
 
@@ -62,7 +67,13 @@ staffRoutes.get('/auth/me', async (c) => {
   const ph = data.photographers.find((p) => p.key === sess.photographerKey);
   if (!ph) return c.json({ user: null });
   return c.json({
-    user: { key: ph.key, name: ph.name, role: ph.role, photo: ph.photo },
+    user: {
+      key: ph.key,
+      name: ph.name,
+      role: ph.role,
+      photo: ph.photo,
+      isSuperUser: ph.isSuperUser === true,
+    },
   });
 });
 
@@ -151,13 +162,21 @@ staffRoutes.get('/schedule', async (c) => {
         };
       });
 
+  // 最高主管 → 看全部；一般攝影師 → 只看自己被綁的
+  const me = data.photographers.find((p) => p.key === myKey);
+  const isSuperUser = me?.isSuperUser === true;
+  const filtered = isSuperUser
+    ? data.bookings
+    : data.bookings.filter((b) => b.videoLeads.includes(myKey) || b.photoLeads.includes(myKey));
+
   // 不合併：每一筆 booking row 都當獨立的一場顯示（同日多場是合理的，例如午宴 + 晚宴）
-  const dates = data.bookings
-    .filter((b) => b.videoLeads.includes(myKey) || b.photoLeads.includes(myKey))
+  const dates = filtered
     .map((b) => ({
       date: normalizeDate(b.date),
-      asVideo: b.videoLeads.includes(myKey),
-      asPhoto: b.photoLeads.includes(myKey),
+      // 主管模式下，asVideo / asPhoto 反映「該 booking 是動 / 平」（看 slots），
+      // 一般攝影師則反映「我是不是這場的主攝」
+      asVideo: isSuperUser ? b.videoSlots > 0 : b.videoLeads.includes(myKey),
+      asPhoto: isSuperUser ? b.photoSlots > 0 : b.photoLeads.includes(myKey),
       notes: b.notes ?? '',
       videoSlots: b.videoSlots,
       photoSlots: b.photoSlots,

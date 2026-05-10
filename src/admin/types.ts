@@ -36,6 +36,8 @@ export type PhotographerRow = {
   // server GET 回傳的旗標，UI 用來顯示「已設定」placeholder
   hasPassword?: boolean;
   visible?: boolean;
+  // 最高主管：登入 /booking 時看得到全部攝影師的預約檔期
+  isSuperUser?: boolean;
 };
 export type SettingRow = { key: string; value: string };
 export type BookingRow = {
