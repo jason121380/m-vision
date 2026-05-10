@@ -8,7 +8,7 @@ import { SubmissionsView } from './SubmissionsView';
 import { AnnouncementView } from './AnnouncementView';
 import { MediaView } from './MediaView';
 import { PushToggle } from '../components/PushToggle';
-import { setupBadgeClearing } from '../lib/push';
+import { listenSwMessage, setupBadgeClearing } from '../lib/push';
 import './admin.css';
 import type {
   AddonRow,
@@ -63,6 +63,24 @@ export function AdminApp() {
 
   // app 打開 / focus 時清掉紅點（系統會自己把 badge 拉掉）
   useEffect(() => setupBadgeClearing(), []);
+
+  // 站內紅點：SW 收到推播時 postMessage 過來，依 url 推到對應的分頁
+  // 進入該分頁時自動清掉
+  const [unread, setUnread] = useState<{ submissions: boolean; announcement: boolean }>({
+    submissions: false,
+    announcement: false,
+  });
+  useEffect(() => {
+    return listenSwMessage((m) => {
+      // 客人下單 → /admin → 收單紀錄
+      if (m.title === '新預約') setUnread((u) => ({ ...u, submissions: true }));
+      // 其他類型可在此擴充
+    });
+  }, []);
+  useEffect(() => {
+    if (tab === 'submissions') setUnread((u) => (u.submissions ? { ...u, submissions: false } : u));
+    if (tab === 'announcement') setUnread((u) => (u.announcement ? { ...u, announcement: false } : u));
+  }, [tab]);
 
   const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
 
@@ -153,6 +171,7 @@ export function AdminApp() {
             onClick={() => setTab('submissions')}
           >
             收單紀錄
+            {unread.submissions && <span className="admin-side-dot" aria-label="有新通知" />}
           </button>
           <button
             className={tab === 'announcement' ? 'active' : ''}

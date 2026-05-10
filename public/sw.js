@@ -85,6 +85,17 @@ self.addEventListener('push', (event) => {
       const next = (await getBadgeCount()) + 1;
       await setBadgeCount(next);
       await applyBadge(next);
+      // 通知 app 內已開的 client，讓它在 UI 對應位置顯示紅點
+      const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      for (const client of clients) {
+        client.postMessage({
+          type: 'push-notification',
+          title,
+          body: options.body,
+          url: options.data.url,
+          tag: options.tag,
+        });
+      }
     })(),
   );
 });

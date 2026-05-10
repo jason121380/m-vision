@@ -117,6 +117,28 @@ export function clearBadge(): void {
   }
 }
 
+// 監聽 Service Worker 收到推播時 postMessage 過來的訊息（admin / booking 共用）。
+// 回傳 cleanup function。
+export type PushMessage = {
+  type: 'push-notification';
+  title: string;
+  body: string;
+  url: string;
+  tag: string;
+};
+export function listenSwMessage(handler: (m: PushMessage) => void): () => void {
+  if (typeof navigator === 'undefined' || !navigator.serviceWorker) return () => undefined;
+  const onMessage = (event: MessageEvent) => {
+    if (event.data && event.data.type === 'push-notification') {
+      handler(event.data as PushMessage);
+    }
+  };
+  navigator.serviceWorker.addEventListener('message', onMessage);
+  return () => {
+    navigator.serviceWorker.removeEventListener('message', onMessage);
+  };
+}
+
 // 在 useEffect 裡呼叫，回傳 cleanup function。
 // 行為：立刻清一次紅點，並在 app 取得 focus / 變回前景時也清。
 export function setupBadgeClearing(): () => void {
