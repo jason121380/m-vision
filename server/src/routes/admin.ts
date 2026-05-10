@@ -24,6 +24,7 @@ export const adminRoutes = new Hono();
 adminRoutes.use('*', requireAdmin);
 
 const camTypeEnum = z.enum(['video', 'photo']);
+const photographerTypeEnum = z.enum(['video', 'photo', 'both']);
 
 const servicesSchema = z.array(
   z.object({ key: z.string().min(1), label: z.string().min(1), price: z.number().int() }),
@@ -50,7 +51,7 @@ const addonsSchema = z.array(
 );
 const photographersSchema = z.array(
   z.object({
-    type: camTypeEnum,
+    type: photographerTypeEnum,
     key: z.string().min(1),
     name: z.string().min(1),
     role: z.string().optional().default(''),

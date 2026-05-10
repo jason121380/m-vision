@@ -21,7 +21,7 @@ export type CeremonyRow = {
 export type AddonRow = { id?: number; key: string; label: string; price: number; sortOrder?: number };
 export type PhotographerRow = {
   id?: number;
-  type: 'video' | 'photo';
+  type: 'video' | 'photo' | 'both';
   key: string;
   name: string;
   role: string;

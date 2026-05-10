@@ -1,11 +1,13 @@
 export type CamType = 'video' | 'photo';
+// 攝影師可以兼差 → 'both' 會同時出現於動態 / 平面選單
+export type PhotographerType = 'video' | 'photo' | 'both';
 
 export type ServiceRow = { key: string; label: string; price: number };
 export type CameraRow = { type: CamType; key: string; label: string; price: number; note: string };
 export type CeremonyRow = { type: CamType; key: string; label: string; price: number };
 export type AddonRow = { key: string; label: string; price: number };
 export type PhotographerRow = {
-  type: CamType;
+  type: PhotographerType;
   key: string;
   name: string;
   role: string;

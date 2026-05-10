@@ -19,18 +19,10 @@ export function computeTotal(state: FormState, config: AppConfig): number {
 
   const addon = state.addonKeys.reduce((sum, k) => sum + findPrice(config.addons, k), 0);
 
-  const vp = isV
-    ? findPrice(
-        config.photographers.filter((p) => p.type === 'video').map((p) => ({ key: p.key, price: p.price })),
-        state.vpKey,
-      )
-    : 0;
-  const pp = isP
-    ? findPrice(
-        config.photographers.filter((p) => p.type === 'photo').map((p) => ({ key: p.key, price: p.price })),
-        state.ppKey,
-      )
-    : 0;
+  // 不限 type：state.vpKey / state.ppKey 已經是顧客選好的對象（可能是 'both' 兼差的人），
+  // 直接依 key 找他的 price 即可
+  const vp = isV ? findPrice(config.photographers, state.vpKey) : 0;
+  const pp = isP ? findPrice(config.photographers, state.ppKey) : 0;
 
   return videoBase + photoBase + vc + pc + vcer + pcer + addon + vp + pp;
 }
@@ -77,7 +69,7 @@ export function buildSummary(state: FormState, config: AppConfig): SummaryRow[] 
     });
   }
   if (isV) {
-    const vp = config.photographers.find((p) => p.type === 'video' && p.key === state.vpKey);
+    const vp = config.photographers.find((p) => p.key === state.vpKey);
     const name = vp ? (vp.role ? `${vp.name}（${vp.role}）` : vp.name) : '—';
     rows.push({
       lbl: `指定錄影　${name}`,
@@ -86,7 +78,7 @@ export function buildSummary(state: FormState, config: AppConfig): SummaryRow[] 
     });
   }
   if (isP) {
-    const pp = config.photographers.find((p) => p.type === 'photo' && p.key === state.ppKey);
+    const pp = config.photographers.find((p) => p.key === state.ppKey);
     const name = pp ? (pp.role ? `${pp.name}（${pp.role}）` : pp.name) : '—';
     rows.push({
       lbl: `指定攝影　${name}`,

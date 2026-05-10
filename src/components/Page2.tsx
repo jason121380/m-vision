@@ -18,8 +18,13 @@ export function Page2({ state, update, config }: Props) {
   // 隱藏「無選（key=none）」與「visible=false」的攝影師；保留「不指定（輪班）」
   const isShown = (p: { key: string; visible?: boolean }) =>
     p.key !== 'none' && p.visible !== false;
-  const videoPhotographers = config.photographers.filter((p) => p.type === 'video' && isShown(p));
-  const photoPhotographers = config.photographers.filter((p) => p.type === 'photo' && isShown(p));
+  // 'both' 類型同時出現於兩邊，客戶可以指定當動態主攝或平面主攝
+  const videoPhotographers = config.photographers.filter(
+    (p) => (p.type === 'video' || p.type === 'both') && isShown(p),
+  );
+  const photoPhotographers = config.photographers.filter(
+    (p) => (p.type === 'photo' || p.type === 'both') && isShown(p),
+  );
 
   const renderPhotographer = (
     p: (typeof videoPhotographers)[number],
