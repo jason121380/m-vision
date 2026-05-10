@@ -45,9 +45,12 @@ app.use('/*', serveStatic({ root: STATIC_DIR }));
 
 let publicHtml: string | null = null;
 let adminHtml: string | null = null;
+let bookingHtml: string | null = null;
 
-async function loadHtml(): Promise<{ pub: string; admin: string }> {
-  if (publicHtml && adminHtml) return { pub: publicHtml, admin: adminHtml };
+async function loadHtml(): Promise<{ pub: string; admin: string; booking: string }> {
+  if (publicHtml && adminHtml && bookingHtml) {
+    return { pub: publicHtml, admin: adminHtml, booking: bookingHtml };
+  }
   const path = resolve(process.cwd(), STATIC_DIR, 'index.html');
   const raw = await readFile(path, 'utf-8');
   publicHtml = raw;
@@ -57,14 +60,22 @@ async function loadHtml(): Promise<{ pub: string; admin: string }> {
     .replace('content="M 視覺"', 'content="M 視覺後台"')
     .replace('<title>M 視覺影像記錄公司</title>', '<title>M 視覺後台</title>')
     .replace(/href="\/logo\.jpg"/g, 'href="/black.jpg"');
-  return { pub: publicHtml, admin: adminHtml };
+  // /booking* 用 booking.webmanifest（start_url=/booking），加到主畫面才會直接落 /booking
+  bookingHtml = raw
+    .replace('/manifest.webmanifest', '/booking.webmanifest')
+    .replace('content="M 視覺"', 'content="M 視覺攝影師"')
+    .replace('<title>M 視覺影像記錄公司</title>', '<title>M 視覺攝影師</title>')
+    .replace(/href="\/logo\.jpg"/g, 'href="/black.jpg"');
+  return { pub: publicHtml, admin: adminHtml, booking: bookingHtml };
 }
 
 app.notFound(async (c) => {
   if (c.req.path.startsWith('/api/')) return c.json({ error: 'not found' }, 404);
   try {
-    const { pub, admin } = await loadHtml();
-    return c.html(c.req.path.startsWith('/admin') ? admin : pub);
+    const { pub, admin, booking } = await loadHtml();
+    if (c.req.path.startsWith('/admin')) return c.html(admin);
+    if (c.req.path.startsWith('/booking')) return c.html(booking);
+    return c.html(pub);
   } catch {
     return c.text('frontend not built — run `npm run build` at repo root first', 500);
   }
