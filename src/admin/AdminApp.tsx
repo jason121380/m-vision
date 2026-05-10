@@ -309,6 +309,21 @@ function Section({ tab }: { tab: TabKey }) {
         ]}
         blank={() => ({ type: 'video', key: genKey(), name: '', role: '', price: 1000, photo: '', desc: '', portfolio: '', username: '', password: '', visible: true })}
         locked={(r) => r.key === 'any'}
+        validate={(rows) => {
+          // 登入帳號非空時不能重複，否則只有第一筆能登入
+          const seen = new Map<string, number>();
+          for (let i = 0; i < rows.length; i++) {
+            const u = String(rows[i]!.username ?? '').trim();
+            if (!u) continue;
+            if (seen.has(u)) {
+              const first = seen.get(u)! + 1;
+              const dup = i + 1;
+              return `登入帳號「${u}」重複（第 ${first} 列與第 ${dup} 列），每位攝影師必須唯一`;
+            }
+            seen.set(u, i);
+          }
+          return null;
+        }}
       />
     );
   }

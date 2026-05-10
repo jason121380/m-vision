@@ -22,6 +22,8 @@ type Props<T extends Record<string, unknown>> = {
   addLabel?: string;
   /** 哪些列是必要的（無法刪除 / 移動，但欄位仍可改） */
   locked?: (row: T) => boolean;
+  /** 儲存前驗證；回傳 string 表示錯誤（會擋下儲存），回傳 null 表示通過 */
+  validate?: (rows: T[]) => string | null;
 };
 
 export function Editor<T extends Record<string, unknown>>({
@@ -36,6 +38,7 @@ export function Editor<T extends Record<string, unknown>>({
   modalAdd,
   addLabel,
   locked,
+  validate,
 }: Props<T>) {
   const [rows, setRows] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,6 +69,13 @@ export function Editor<T extends Record<string, unknown>>({
   }, [path, pickRows]);
 
   const save = async () => {
+    if (validate) {
+      const err = validate(rows);
+      if (err) {
+        setStatus({ kind: 'err', msg: err });
+        return;
+      }
+    }
     setSaving(true);
     setStatus({ kind: 'idle', msg: '' });
     const body = serialize ? serialize(rows) : rows;
