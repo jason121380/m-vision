@@ -29,7 +29,7 @@
 .bk-login-card button:disabled{opacity:.5;cursor:not-allowed}
 
 /* Announcement */
-.bk-announcement{margin-bottom:18px;padding:14px 16px;background:var(--accent-soft);border:1px solid var(--accent);border-left:4px solid var(--accent);border-radius:var(--r-md);color:var(--ink)}
+.bk-announcement{margin-bottom:18px;padding:14px 16px;background:var(--accent-soft);border:1px solid var(--accent);border-radius:var(--r-md);color:var(--ink)}
 .bk-announcement-h{font-size:11px;letter-spacing:.18em;font-weight:700;color:var(--accent);margin-bottom:6px}
 .bk-announcement-body{font-size:13.5px;line-height:1.7;color:var(--ink);white-space:pre-wrap;word-break:break-word}
 
