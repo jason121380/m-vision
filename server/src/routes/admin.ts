@@ -230,12 +230,20 @@ adminRoutes.post('/bookings', async (c) => {
   const body = await c.req.json();
   const parsed = bookingSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: 'bad payload', issues: parsed.error.issues }, 400);
+  // 同一個日期已存在 → upsert（避免重複行造成前台列表重複）
+  const before = (await read()).bookings.find((b) => b.date === parsed.data.date);
+  const beforeV = new Set(before?.videoLeads ?? []);
+  const beforeP = new Set(before?.photoLeads ?? []);
   const result = await update((d) => {
-    d.bookings.push(parsed.data as BookingRow);
+    const idx = d.bookings.findIndex((b) => b.date === parsed.data.date);
+    if (idx >= 0) d.bookings[idx] = parsed.data as BookingRow;
+    else d.bookings.push(parsed.data as BookingRow);
     d.bookings.sort((a, b) => a.date.localeCompare(b.date));
   });
   syncBookingsToSheet(result.bookings).catch(() => {});
-  notifyStaffNewLeads(parsed.data.date, parsed.data.videoLeads, parsed.data.photoLeads);
+  const addedV = parsed.data.videoLeads.filter((k) => !beforeV.has(k));
+  const addedP = parsed.data.photoLeads.filter((k) => !beforeP.has(k));
+  notifyStaffNewLeads(parsed.data.date, addedV, addedP);
   return c.json({ ok: true });
 });
 

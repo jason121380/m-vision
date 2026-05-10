@@ -167,6 +167,22 @@ export function BookingsView() {
 
   const isEdit = draftState.mode === 'edit';
 
+  // 排列規則：未過期（含今天）由近到遠在前；已過期擺到最下面（最近結束的擺前）
+  const todayKey = useMemo(() => {
+    const t = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`;
+  }, []);
+  const sortedRows = useMemo(() => {
+    const upcoming = rows
+      .filter((b) => b.date >= todayKey)
+      .sort((a, b) => a.date.localeCompare(b.date));
+    const past = rows
+      .filter((b) => b.date < todayKey)
+      .sort((a, b) => b.date.localeCompare(a.date));
+    return [...upcoming, ...past];
+  }, [rows, todayKey]);
+
   return (
     <div>
       <h2>預約檔期</h2>
@@ -190,6 +206,7 @@ export function BookingsView() {
         <table className="adt">
           <thead>
             <tr>
+              <th style={{ width: 56 }}>No.</th>
               <th>日期</th>
               <th>動態主攝</th>
               <th>動態場次</th>
@@ -202,13 +219,14 @@ export function BookingsView() {
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 && (
+            {sortedRows.length === 0 && (
               <tr>
-                <td colSpan={9} className="adt-empty">尚無檔期</td>
+                <td colSpan={10} className="adt-empty">尚無檔期</td>
               </tr>
             )}
-            {rows.map((b) => (
-              <tr key={b.id}>
+            {sortedRows.map((b, i) => (
+              <tr key={b.id} className={b.date < todayKey ? 'adt-row-past' : undefined}>
+                <td className="adt-no">{i + 1}</td>
                 <td><strong>{b.date}</strong></td>
                 <td>{renderLeads('video', b.videoLeads)}</td>
                 <td>{b.videoSlots}</td>

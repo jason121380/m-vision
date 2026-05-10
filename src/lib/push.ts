@@ -25,7 +25,11 @@ export async function getPushStatus(): Promise<PushStatus> {
 
 async function registerSW(): Promise<ServiceWorkerRegistration> {
   const existing = await navigator.serviceWorker.getRegistration('/sw.js');
-  if (existing) return existing;
+  if (existing) {
+    // 嘗試把後端有的新版 SW 拉下來，避免攝影師卡在舊版（iOS 會 cache 很久）
+    existing.update().catch(() => undefined);
+    return existing;
+  }
   return navigator.serviceWorker.register('/sw.js');
 }
 
@@ -128,6 +132,28 @@ export function setupBadgeClearing(): () => void {
     document.removeEventListener('visibilitychange', onVis);
   };
 }
+
+// 主動把紅點數字打上去（讓使用者先驗證裝置支援；
+// app 再次取得焦點時會自動被 clearBadge 清掉）
+export async function setBadgeManual(n: number): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const nav = navigator as Navigator & {
+    setAppBadge?: (n?: number) => Promise<void>;
+  };
+  if (!nav.setAppBadge) {
+    return { ok: false, reason: '此裝置 / 瀏覽器不支援 App Badge API（需 iOS 16.4+ PWA、Android Chrome PWA、macOS Chrome 等）' };
+  }
+  try {
+    await nav.setAppBadge(n);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, reason: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+export const isBadgeSupported = (): boolean => {
+  if (typeof navigator === 'undefined') return false;
+  return 'setAppBadge' in navigator;
+};
 
 export async function disablePush(kind: PushKind): Promise<{ ok: true }> {
   if (!isPushSupported()) return { ok: true };
