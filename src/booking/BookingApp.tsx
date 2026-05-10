@@ -181,15 +181,19 @@ function ScheduleView({
     return ymd(t.getFullYear(), t.getMonth() + 1, t.getDate());
   }, []);
 
+  // 客戶端再排一次保險：upcoming 由近到遠（最早要拍的擺最前面）；past 由近到遠（剛結束的擺最前面）
   const upcoming = useMemo(
-    () => dates.filter((d) => d.date >= today),
+    () =>
+      [...dates]
+        .filter((d) => d.date >= today)
+        .sort((a, b) => a.date.localeCompare(b.date)),
     [dates, today],
   );
   const past = useMemo(
     () =>
       [...dates]
         .filter((d) => d.date < today)
-        .sort((a, b) => b.date.localeCompare(a.date)), // 已結束從近到遠
+        .sort((a, b) => b.date.localeCompare(a.date)),
     [dates, today],
   );
 
