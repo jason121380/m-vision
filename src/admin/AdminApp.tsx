@@ -7,6 +7,7 @@ import { SettingsView } from './SettingsView';
 import { SubmissionsView } from './SubmissionsView';
 import { AnnouncementView } from './AnnouncementView';
 import { MediaView } from './MediaView';
+import { PushToggle } from '../components/PushToggle';
 import './admin.css';
 import type {
   AddonRow,
@@ -104,6 +105,7 @@ export function AdminApp() {
         </div>
         <div className="admin-top-right">
           <span>{auth.user.username}</span>
+          <PushToggle kind="admin" className="admin-btn" />
           <button
             className="admin-btn admin-theme-toggle"
             onClick={toggleTheme}

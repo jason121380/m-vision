@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { read, update, dataDir } from '../store/storage.ts';
 import { syncBookingsToSheet } from '../store/sync-bookings.ts';
+import { getVapidPublicKey, pushToAdmins, pushToStaff } from '../push.ts';
 
 export const publicRoutes = new Hono();
 
@@ -22,6 +23,15 @@ publicRoutes.get('/config', async (c) => {
 publicRoutes.get('/announcement', async (c) => {
   const d = await read();
   return c.json({ text: d.announcement ?? '' });
+});
+
+publicRoutes.get('/push/vapid-public-key', async (c) => {
+  try {
+    const publicKey = await getVapidPublicKey();
+    return c.json({ publicKey });
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, 500);
+  }
 });
 
 const submissionSchema = z.object({
@@ -146,6 +156,29 @@ publicRoutes.post('/booking', async (c) => {
 
   // 4. 把更新後的整份 bookings 推到備份 Sheet（fire-and-forget）
   syncBookingsToSheet(result.bookings).catch(() => {});
+
+  // 5. 推 Web Push 通知（fire-and-forget）
+  //    - 後台：客人下單一律通知
+  //    - 攝影師：自己被綁為主攝（vpKey / ppKey）才通知；'any' 不通知
+  const namesLabel = [data.groom, data.bride].filter(Boolean).join(' & ') || '客戶';
+  pushToAdmins({
+    title: '新預約',
+    body: `${namesLabel}　${data.eventDate || ''}　${data.service}`,
+    url: '/admin',
+    tag: `booking-${data.eventDate}-${Date.now()}`,
+  }).catch(() => {});
+
+  const staffNotify = (key: string, type: '動態' | '平面') => {
+    if (!key || key === 'any') return;
+    pushToStaff(key, {
+      title: '新預約檔期',
+      body: `${data.eventDate || ''}　${type}　${namesLabel}`,
+      url: '/booking',
+      tag: `staff-${key}-${data.eventDate}`,
+    }).catch(() => {});
+  };
+  if (data.svc === 'video' || data.svc === 'both') staffNotify(data.vpKey, '動態');
+  if (data.svc === 'photo' || data.svc === 'both') staffNotify(data.ppKey, '平面');
 
   return c.json({ ok: true, pdfUrl });
 });

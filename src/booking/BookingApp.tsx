@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
+import { PushToggle } from '../components/PushToggle';
 import './booking.css';
 
 type User = { key: string; name: string; role: string; photo?: string };
@@ -175,6 +176,7 @@ function ScheduleView({
           {user.role && <span className="bk-role">（{user.role}）</span>}
         </div>
         <div className="bk-top-right">
+          <PushToggle kind="staff" className="bk-btn" />
           <ThemeToggle theme={theme} onToggle={onToggleTheme} />
           <button className="bk-btn" onClick={onLogout}>登出</button>
         </div>
