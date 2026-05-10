@@ -325,6 +325,18 @@ function Section({ tab }: { tab: TabKey }) {
             }
             if (!prev) seen.set(u, { idx: i, key: k });
           }
+          // 同一個 key 多筆 row 的「新密碼」必須一致（空字串視為不變更，跳過）
+          const pwdByKey = new Map<string, { idx: number; pwd: string }>();
+          for (let i = 0; i < rows.length; i++) {
+            const p = String(rows[i]!.password ?? '');
+            if (!p) continue;
+            const k = String(rows[i]!.key ?? '');
+            const prev = pwdByKey.get(k);
+            if (prev && prev.pwd !== p) {
+              return `同一位攝影師（第 ${prev.idx + 1} 列與第 ${i + 1} 列，key=${k}）的新密碼不一致，請填相同密碼或留空保留舊密碼`;
+            }
+            if (!prev) pwdByKey.set(k, { idx: i, pwd: p });
+          }
           return null;
         }}
       />

@@ -167,22 +167,32 @@ adminRoutes.put('/photographers', async (c) => {
     if (prevKey === undefined) seenUser.set(u, r.key);
   }
 
+  // 同一個 key 多筆 row 的「新密碼」不能填不一致（同一人不能有兩組密碼）
+  const newPwdByKey = new Map<string, string>();
+  for (const r of parsed.data) {
+    if (!r.password) continue;
+    const prev = newPwdByKey.get(r.key);
+    if (prev !== undefined && prev !== r.password) {
+      return c.json({ error: `同一位攝影師（key="${r.key}"）的新密碼不一致，請填相同密碼或留空保留舊密碼` }, 400);
+    }
+    if (prev === undefined) newPwdByKey.set(r.key, r.password);
+  }
+
   // 把現有的 passwordHash 用 key 索引備好。送進來的 row 若 password 留空，保留舊 hash；
-  // 有新 password 就 bcrypt hash 後覆蓋。
+  // 有新 password 就 bcrypt hash 後覆蓋。同一個 key 只 hash 一次，所有同 key 的 row 共用。
   const cur = await read();
   const existingByKey = new Map<string, string>();
   for (const p of cur.photographers) {
     if (p.passwordHash) existingByKey.set(p.key, p.passwordHash);
   }
+  const newHashByKey = new Map<string, string>();
+  for (const [k, pwd] of newPwdByKey) {
+    newHashByKey.set(k, await bcrypt.hash(pwd, 10));
+  }
 
   const next: PhotographerRow[] = [];
   for (const r of parsed.data) {
-    let passwordHash: string | undefined;
-    if (r.password) {
-      passwordHash = await bcrypt.hash(r.password, 10);
-    } else {
-      passwordHash = existingByKey.get(r.key);
-    }
+    const passwordHash = newHashByKey.get(r.key) ?? existingByKey.get(r.key);
     next.push({
       type: r.type,
       key: r.key,
