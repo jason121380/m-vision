@@ -7,6 +7,7 @@ import { SettingsView } from './SettingsView';
 import { SubmissionsView } from './SubmissionsView';
 import { AnnouncementView } from './AnnouncementView';
 import { MediaView } from './MediaView';
+import { MergeDuplicatesButton } from './MergeDuplicatesButton';
 import { PushToggle } from '../components/PushToggle';
 import { listenSwMessage, setupBadgeClearing } from '../lib/push';
 import './admin.css';
@@ -326,6 +327,7 @@ function Section({ tab }: { tab: TabKey }) {
           }
           return null;
         }}
+        extraToolbar={({ reload }) => <MergeDuplicatesButton onDone={reload} />}
       />
     );
   }

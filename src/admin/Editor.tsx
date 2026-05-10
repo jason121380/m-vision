@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { api } from '../lib/api';
 import { EditableTable, type ColumnSpec } from './EditableTable';
 import { Modal } from './Modal';
@@ -24,6 +24,11 @@ type Props<T extends Record<string, unknown>> = {
   locked?: (row: T) => boolean;
   /** 儲存前驗證；回傳 string 表示錯誤（會擋下儲存），回傳 null 表示通過 */
   validate?: (rows: T[]) => string | null;
+  /**
+   * 額外塞進 toolbar 的按鈕（例如「合併重複帳號」），會出現在「+ 新增」右邊。
+   * 拿到 reload helper 可以在自定操作完成後直接刷新表格。
+   */
+  extraToolbar?: (helpers: { reload: () => Promise<unknown> }) => ReactNode;
 };
 
 export function Editor<T extends Record<string, unknown>>({
@@ -39,6 +44,7 @@ export function Editor<T extends Record<string, unknown>>({
   addLabel,
   locked,
   validate,
+  extraToolbar,
 }: Props<T>) {
   const [rows, setRows] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,11 +55,9 @@ export function Editor<T extends Record<string, unknown>>({
   });
   const [draft, setDraft] = useState<T | null>(null);
 
-  useEffect(() => {
-    let alive = true;
+  const reload = () => {
     setLoading(true);
-    api.get<unknown>(`/api/admin/${path}`).then((res) => {
-      if (!alive) return;
+    return api.get<unknown>(`/api/admin/${path}`).then((res) => {
       if (res.ok) {
         const data = pickRows ? pickRows(res.data) : (res.data as T[]);
         setRows(Array.isArray(data) ? data : []);
@@ -63,9 +67,11 @@ export function Editor<T extends Record<string, unknown>>({
       }
       setLoading(false);
     });
-    return () => {
-      alive = false;
-    };
+  };
+
+  useEffect(() => {
+    reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [path, pickRows]);
 
   const save = async () => {
@@ -113,6 +119,7 @@ export function Editor<T extends Record<string, unknown>>({
             + {addLabel ?? '新增'}
           </button>
         )}
+        {extraToolbar && extraToolbar({ reload })}
         {loading && <span className="admin-status">載入中…</span>}
         {!loading && status.kind !== 'idle' && (
           <span className={`admin-status ${status.kind}`}>{status.msg}</span>
