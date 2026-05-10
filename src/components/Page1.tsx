@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import type { AppConfig, FormState, ServiceKey } from '../types';
 import { Calendar } from './Calendar';
 import { camerasLeft, cameraCount, videoFull, photoFull, ymd } from '../lib/bookings';
@@ -42,6 +43,48 @@ export function Page1({ state, update, config }: Props) {
     // 若選了一個當日已滿的服務，視為無效；validation 會擋下一頁，這裡仍允許切換
     update({ svc });
   };
+
+  // 換日期時，把現在這一天已不再可選的選擇清掉。
+  // 例如：先在 5 號選了 video + 純宴客 + 二機，再切到 11 號（11 號 video 已滿），
+  // 不清除的話 svc/vBanquet/vcKey 會殘留，UI 看起來像「video 還是選著」但實際已滿。
+  useEffect(() => {
+    if (!dateKey) return;
+    const patch: Partial<FormState> = {};
+
+    const dropV = vFull && (state.svc === 'video' || state.svc === 'both' || state.vBanquet || state.vcKey || state.vcerKey || state.vpKey);
+    const dropP = pFull && (state.svc === 'photo' || state.svc === 'both' || state.pBanquet || state.pcKey || state.pcerKey || state.ppKey);
+
+    if (dropV) {
+      if (state.svc === 'video') patch.svc = '';
+      else if (state.svc === 'both') patch.svc = 'photo';
+      patch.vBanquet = false;
+      patch.vcKey = '';
+      patch.vcerKey = '';
+      patch.vpKey = '';
+    }
+    if (dropP) {
+      if (state.svc === 'photo') patch.svc = '';
+      else if (state.svc === 'both') patch.svc = patch.svc === 'photo' ? '' : 'video';
+      patch.pBanquet = false;
+      patch.pcKey = '';
+      patch.pcerKey = '';
+      patch.ppKey = '';
+    }
+
+    // 機位：若先前選的台數現在超出當日剩餘機位，也清掉
+    if (!dropV && state.vcKey) {
+      const vcLabel = videoCams.find((c) => c.key === state.vcKey)?.label ?? '';
+      if (isCameraBlocked('video', vcLabel)) patch.vcKey = '';
+    }
+    if (!dropP && state.pcKey) {
+      const pcLabel = photoCams.find((c) => c.key === state.pcKey)?.label ?? '';
+      if (isCameraBlocked('photo', pcLabel)) patch.pcKey = '';
+    }
+
+    if (Object.keys(patch).length > 0) update(patch);
+    // 只看 dateKey + 該日是否滿；其他 state 故意不放 deps 避免 loop
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateKey, vFull, pFull]);
 
   return (
     <div className="page active">

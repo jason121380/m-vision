@@ -37,6 +37,9 @@ app.route('/api', publicRoutes);
 app.route('/api/admin', adminRoutes);
 app.route('/api/staff', staffRoutes);
 
+// 客戶上傳的 banner / 圖片：DATA_DIR/media/* 透過 /media/* 對外
+app.use('/media/*', serveStatic({ root: dataDir() }));
+
 const STATIC_DIR = process.env.STATIC_DIR ?? '../dist';
 app.use('/*', serveStatic({ root: STATIC_DIR }));
 

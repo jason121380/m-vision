@@ -1,7 +1,10 @@
 import bcrypt from 'bcryptjs';
+import { mkdir, unlink, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { read, update } from '../store/storage.ts';
+import { read, update, dataDir } from '../store/storage.ts';
 import { importFromSheet } from '../store/import-sheet.ts';
 import { syncBookingsToSheet } from '../store/sync-bookings.ts';
 import { requireAdmin } from '../auth/middleware.ts';
@@ -10,6 +13,7 @@ import type {
   BookingRow,
   CameraRow,
   CeremonyRow,
+  MediaRow,
   PhotographerRow,
   ServiceRow,
   SettingsMap,
@@ -267,6 +271,97 @@ adminRoutes.post('/sync-bookings', async (c) => {
   } catch (err) {
     return c.json({ error: err instanceof Error ? err.message : String(err) }, 502);
   }
+});
+
+// === 公告 ===
+const announcementSchema = z.object({ text: z.string() });
+
+adminRoutes.get('/announcement', async (c) => {
+  const d = await read();
+  return c.json({ text: d.announcement ?? '' });
+});
+
+adminRoutes.put('/announcement', async (c) => {
+  const body = await c.req.json();
+  const parsed = announcementSchema.safeParse(body);
+  if (!parsed.success) return c.json({ error: 'bad payload', issues: parsed.error.issues }, 400);
+  await update((d) => {
+    d.announcement = parsed.data.text;
+  });
+  return c.json({ ok: true });
+});
+
+// === 網站 Banner / Media ===
+// 檔案存進 DATA_DIR/media/<uuid>.<ext>，靜態走 /media/* serve（見 server/src/index.ts）。
+// 容量上限見 BodyLimit middleware。
+adminRoutes.get('/media', async (c) => {
+  const d = await read();
+  return c.json((d.media ?? []).map((m, idx) => ({ ...m, id: idx })));
+});
+
+const MAX_UPLOAD = 100 * 1024 * 1024; // 100MB
+
+adminRoutes.post('/media', async (c) => {
+  let body: Record<string, string | File>;
+  try {
+    body = await c.req.parseBody();
+  } catch (err) {
+    return c.json({ error: '解析上傳失敗：' + (err instanceof Error ? err.message : String(err)) }, 400);
+  }
+  const file = body['file'];
+  const alt = typeof body['alt'] === 'string' ? body['alt'] : '';
+  if (!(file instanceof File)) return c.json({ error: '請選擇檔案' }, 400);
+  if (file.size > MAX_UPLOAD) return c.json({ error: `檔案超過 ${Math.round(MAX_UPLOAD / 1024 / 1024)}MB 上限` }, 413);
+
+  const mime = file.type || '';
+  let mtype: 'image' | 'video';
+  if (mime.startsWith('image/')) mtype = 'image';
+  else if (mime.startsWith('video/')) mtype = 'video';
+  else return c.json({ error: '只接受圖片或影片格式' }, 400);
+
+  const rawExt = (file.name.split('.').pop() ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const ext = rawExt || (mtype === 'video' ? 'mp4' : 'jpg');
+  const filename = `${randomUUID()}.${ext}`;
+  const mediaDir = resolve(dataDir(), 'media');
+  await mkdir(mediaDir, { recursive: true });
+  const filepath = resolve(mediaDir, filename);
+  const arrayBuffer = await file.arrayBuffer();
+  await writeFile(filepath, Buffer.from(arrayBuffer));
+
+  const row: MediaRow = {
+    type: mtype,
+    url: `/media/${filename}`,
+    alt: alt || file.name,
+    poster: '',
+  };
+  let nextLen = 0;
+  await update((d) => {
+    if (!Array.isArray(d.media)) d.media = [];
+    d.media.push(row);
+    nextLen = d.media.length;
+  });
+  return c.json({ ok: true, row: { ...row, id: nextLen - 1 } });
+});
+
+adminRoutes.delete('/media/:id', async (c) => {
+  const id = Number(c.req.param('id'));
+  let removed: MediaRow | undefined;
+  await update((d) => {
+    if (!Array.isArray(d.media)) return;
+    if (id < 0 || id >= d.media.length) return;
+    [removed] = d.media.splice(id, 1);
+  });
+  if (!removed) return c.json({ error: 'not found' }, 404);
+  // 同步刪實體檔（best-effort，刪不掉也讓資料庫先更新）
+  if (removed.url.startsWith('/media/')) {
+    const filename = removed.url.slice('/media/'.length);
+    try {
+      await unlink(resolve(dataDir(), 'media', filename));
+    } catch (err) {
+      console.warn('[media] unlink failed:', err);
+    }
+  }
+  return c.json({ ok: true });
 });
 
 // 從 Google Sheet 公開 CSV 整張覆蓋（bookings 是 upsert）

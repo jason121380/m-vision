@@ -3,9 +3,11 @@ import { api } from '../lib/api';
 import { Avatar } from './Avatar';
 import { Modal } from './Modal';
 import { TrashIcon } from './TrashIcon';
+import { PencilIcon } from './PencilIcon';
 import type { BookingRow, PhotographerRow } from './types';
 
 type Draft = Omit<BookingRow, 'id'>;
+type DraftState = { mode: 'new' } | { mode: 'edit'; id: number };
 
 const blankDraft = (): Draft => ({
   date: '',
@@ -25,6 +27,7 @@ export function BookingsView() {
   const [busyId, setBusyId] = useState<number | null>(null);
   const [err, setErr] = useState('');
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [draftState, setDraftState] = useState<DraftState>({ mode: 'new' });
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
@@ -89,6 +92,28 @@ export function BookingsView() {
     }
   };
 
+  const openNew = () => {
+    setDraftState({ mode: 'new' });
+    setDraft(blankDraft());
+    setErr('');
+  };
+
+  const openEdit = (b: BookingRow) => {
+    if (b.id == null) return;
+    setDraftState({ mode: 'edit', id: b.id });
+    setDraft({
+      date: b.date,
+      videoSlots: b.videoSlots,
+      photoSlots: b.photoSlots,
+      videoCamsUsed: b.videoCamsUsed,
+      photoCamsUsed: b.photoCamsUsed,
+      videoLeads: [...b.videoLeads],
+      photoLeads: [...b.photoLeads],
+      notes: b.notes,
+    });
+    setErr('');
+  };
+
   const patchDraft = (patch: Partial<Draft>) => {
     setDraft((d) => (d ? { ...d, ...patch } : d));
   };
@@ -109,13 +134,16 @@ export function BookingsView() {
     }
     setSaving(true);
     setErr('');
-    const res = await api.post<{ ok: boolean }>('/api/admin/bookings', draft);
+    const res =
+      draftState.mode === 'edit'
+        ? await api.put<{ ok: boolean }>(`/api/admin/bookings/${draftState.id}`, draft)
+        : await api.post<{ ok: boolean }>('/api/admin/bookings', draft);
     setSaving(false);
     if (res.ok) {
       setDraft(null);
       load();
     } else {
-      setErr(`新增失敗：${res.error}`);
+      setErr(`${draftState.mode === 'edit' ? '更新' : '新增'}失敗：${res.error}`);
     }
   };
 
@@ -137,6 +165,8 @@ export function BookingsView() {
     }
   };
 
+  const isEdit = draftState.mode === 'edit';
+
   return (
     <div>
       <h2>預約檔期</h2>
@@ -146,7 +176,7 @@ export function BookingsView() {
         當這些數字達到「基本資料」裡 max_*_per_day 的上限，前台行事曆 / 機位 / 攝影師會自動變灰。想擋整天 → 把 slots 填到上限；想擋某攝影師 → 把他勾起來。
       </p>
       <div className="admin-toolbar">
-        <button className="admin-btn primary" onClick={() => setDraft(blankDraft())}>
+        <button className="admin-btn primary" onClick={openNew}>
           + 新增檔期
         </button>
         <button className="admin-btn" onClick={syncToSheet} disabled={syncing || loading}>
@@ -189,6 +219,15 @@ export function BookingsView() {
                 <td>{b.notes}</td>
                 <td className="actions">
                   <button
+                    className="row-edit"
+                    onClick={() => openEdit(b)}
+                    disabled={busyId === b.id}
+                    aria-label="編輯"
+                    title="編輯"
+                  >
+                    <PencilIcon />
+                  </button>
+                  <button
                     className="row-del"
                     onClick={() => removeRow(b.id!)}
                     disabled={busyId === b.id}
@@ -207,7 +246,7 @@ export function BookingsView() {
 
       <Modal
         open={!!draft}
-        title="新增檔期"
+        title={isEdit ? '編輯檔期' : '新增檔期'}
         onClose={closeModal}
         footer={
           <>
@@ -215,7 +254,7 @@ export function BookingsView() {
               取消
             </button>
             <button className="admin-btn primary" onClick={saveDraft} disabled={saving}>
-              {saving ? '儲存中…' : '新增'}
+              {saving ? '儲存中…' : isEdit ? '儲存' : '新增'}
             </button>
           </>
         }

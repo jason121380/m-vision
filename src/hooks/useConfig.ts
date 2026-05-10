@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { HARDCODED_MEDIA } from '../lib/defaults';
-import { apiFetch } from '../lib/api';
+import { apiFetch, apiUrl } from '../lib/api';
 import type {
   AddonRow,
   AppConfig,
   BookingRow,
   CameraRow,
   CeremonyRow,
+  MediaRow,
   PhotographerRow,
   ServiceRow,
   SettingsMap,
@@ -78,6 +78,7 @@ type ConfigResponse = {
   photographers: PhotographerRow[];
   settings: SettingsMap;
   bookings: BookingRow[];
+  media?: MediaRow[];
 };
 
 const EMPTY_CONFIG: AppConfig = {
@@ -86,9 +87,18 @@ const EMPTY_CONFIG: AppConfig = {
   ceremonies: [],
   addons: [],
   photographers: [],
-  media: HARDCODED_MEDIA,
+  media: [],
   settings: {},
   bookings: [],
+};
+
+// 後端回的 media URL 是 /media/xxx（相對 server）。dev 時前端跑 5173、後端 3001，
+// 走 vite proxy；prod 同源，直接相對即可。已存在的外部 URL（http(s)://）原樣。
+const resolveMediaUrl = (url: string): string => {
+  if (!url) return url;
+  if (/^https?:\/\//.test(url)) return url;
+  if (url.startsWith('/media/')) return apiUrl(url);
+  return url;
 };
 
 export function useConfig() {
@@ -120,7 +130,10 @@ export function useConfig() {
           photo: normalizeMediaUrl(p.photo ?? '', 'image'),
           portfolio: (p.portfolio ?? '').trim(),
         })),
-        media: HARDCODED_MEDIA,
+        media: (d.media ?? []).map<MediaRow>((m) => ({
+          ...m,
+          url: resolveMediaUrl(m.url),
+        })),
         settings: d.settings
           ? Object.entries(d.settings).reduce<SettingsMap>((acc, [k, v]) => {
               acc[k] = k === 'logo' ? normalizeMediaUrl(v, 'image') : v;
@@ -138,6 +151,7 @@ export function useConfig() {
         photographers: next.photographers.length,
         settings: Object.keys(next.settings).length,
         bookings: next.bookings.length,
+        media: next.media.length,
       });
 
       setConfig(next);
