@@ -7,8 +7,8 @@ import { SettingsView } from './SettingsView';
 import { SubmissionsView } from './SubmissionsView';
 import { AnnouncementView } from './AnnouncementView';
 import { MediaView } from './MediaView';
-import { PushToggle } from '../components/PushToggle';
 import { listenSwMessage, setupBadgeClearing } from '../lib/push';
+import { PushPrompt } from '../components/PushPrompt';
 import './admin.css';
 import type {
   AddonRow,
@@ -65,6 +65,7 @@ export function AdminApp() {
 
   // app 打開 / focus 時清掉紅點（系統會自己把 badge 拉掉）
   useEffect(() => setupBadgeClearing(), []);
+
 
   // 站內紅點：SW 收到推播時 postMessage 過來，依 url 推到對應的分頁
   // 進入該分頁時自動清掉
@@ -129,7 +130,6 @@ export function AdminApp() {
         </div>
         <div className="admin-top-right">
           <span>{auth.user.username}</span>
-          <PushToggle kind="admin" className="admin-btn" />
           <button
             className="admin-btn admin-theme-toggle"
             onClick={toggleTheme}
@@ -141,6 +141,9 @@ export function AdminApp() {
           <button className="admin-btn" onClick={onLogout}>登出</button>
           <a className="admin-btn admin-link" href="/" target="_blank" rel="noopener noreferrer">查看客人預約頁面</a>
         </div>
+      </div>
+      <div style={{ padding: '0 16px' }}>
+        <PushPrompt kind="admin" />
       </div>
       <div className="admin-body">
         <div className="admin-side">

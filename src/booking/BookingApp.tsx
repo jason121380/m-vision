@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { Avatar } from '../components/Avatar';
-import { PushToggle } from '../components/PushToggle';
 import { setupBadgeClearing } from '../lib/push';
+import { PushPrompt } from '../components/PushPrompt';
 import './booking.css';
 
 type User = { key: string; name: string; role: string; photo?: string; isSuperUser?: boolean };
@@ -51,6 +51,7 @@ export function BookingApp() {
 
   // app 打開 / focus 時清掉紅點
   useEffect(() => setupBadgeClearing(), []);
+
 
   useEffect(() => {
     api.get<{ user: User | null }>('/api/staff/auth/me').then((res) => {
@@ -307,7 +308,6 @@ function ScheduleView({
           {user.role && <span className="bk-role">（{user.role}）</span>}
         </div>
         <div className="bk-top-right">
-          <PushToggle kind="staff" className="bk-btn" />
           <ThemeToggle theme={theme} onToggle={onToggleTheme} />
           <button className="bk-btn" onClick={onLogout}>登出</button>
         </div>
@@ -329,6 +329,7 @@ function ScheduleView({
           )}
         </div>
         <div className="bk-inner">
+          <PushPrompt kind="staff" />
           {announcement.trim() && (
             <div className="bk-announcement" role="status" aria-label="公告">
               <div className="bk-announcement-h">公告</div>

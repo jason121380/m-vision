@@ -99,6 +99,20 @@ export async function enablePush(
   return { ok: true };
 }
 
+// 「靜默」自動重訂閱：只在權限已經 granted、純粹 SW 訂閱遺失（換裝置 / cache 過期）
+// 時自動補回去。permission 是 default / denied / 不支援都直接放棄，由 PushPrompt 引導手動。
+export async function tryAutoEnablePush(kind: PushKind): Promise<void> {
+  try {
+    if (!isPushSupported()) return;
+    if (Notification.permission !== 'granted') return;
+    const status = await getPushStatus();
+    if (status === 'subscribed') return;
+    await enablePush(kind);
+  } catch {
+    /* ignore */
+  }
+}
+
 // App 打開（focus / visibility 變回前景）時把紅點清掉。
 // 同時告訴 SW 把 IndexedDB 的計數歸零。
 export function clearBadge(): void {
