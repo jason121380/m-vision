@@ -99,6 +99,21 @@ export async function enablePush(
   return { ok: true };
 }
 
+// 「靜默」嘗試自動開啟推播：已訂閱 / 被擋 / 不支援 → 直接放棄；
+// 權限是 default 時會嘗試呼叫一次 requestPermission（瀏覽器會自己決定要不要彈窗）。
+// 失敗都吞掉，不報錯，因為這條路是預設打開、不打擾使用者。
+export async function tryAutoEnablePush(kind: PushKind): Promise<void> {
+  try {
+    if (!isPushSupported()) return;
+    if (Notification.permission === 'denied') return;
+    const status = await getPushStatus();
+    if (status === 'subscribed') return;
+    await enablePush(kind);
+  } catch {
+    /* ignore */
+  }
+}
+
 // App 打開（focus / visibility 變回前景）時把紅點清掉。
 // 同時告訴 SW 把 IndexedDB 的計數歸零。
 export function clearBadge(): void {

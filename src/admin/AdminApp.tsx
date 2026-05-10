@@ -7,8 +7,7 @@ import { SettingsView } from './SettingsView';
 import { SubmissionsView } from './SubmissionsView';
 import { AnnouncementView } from './AnnouncementView';
 import { MediaView } from './MediaView';
-import { PushToggle } from '../components/PushToggle';
-import { listenSwMessage, setupBadgeClearing } from '../lib/push';
+import { listenSwMessage, setupBadgeClearing, tryAutoEnablePush } from '../lib/push';
 import './admin.css';
 import type {
   AddonRow,
@@ -65,6 +64,11 @@ export function AdminApp() {
 
   // app 打開 / focus 時清掉紅點（系統會自己把 badge 拉掉）
   useEffect(() => setupBadgeClearing(), []);
+
+  // 登入後預設自動開啟推播通知，使用者不用手動點按鈕
+  useEffect(() => {
+    if (auth.status === 'in') tryAutoEnablePush('admin');
+  }, [auth.status]);
 
   // 站內紅點：SW 收到推播時 postMessage 過來，依 url 推到對應的分頁
   // 進入該分頁時自動清掉
@@ -129,7 +133,6 @@ export function AdminApp() {
         </div>
         <div className="admin-top-right">
           <span>{auth.user.username}</span>
-          <PushToggle kind="admin" className="admin-btn" />
           <button
             className="admin-btn admin-theme-toggle"
             onClick={toggleTheme}

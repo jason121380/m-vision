@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { Avatar } from '../components/Avatar';
-import { PushToggle } from '../components/PushToggle';
-import { setupBadgeClearing } from '../lib/push';
+import { setupBadgeClearing, tryAutoEnablePush } from '../lib/push';
 import './booking.css';
 
 type User = { key: string; name: string; role: string; photo?: string; isSuperUser?: boolean };
@@ -51,6 +50,11 @@ export function BookingApp() {
 
   // app 打開 / focus 時清掉紅點
   useEffect(() => setupBadgeClearing(), []);
+
+  // 登入後預設自動開啟推播通知，攝影師不用手動點按鈕
+  useEffect(() => {
+    if (auth.status === 'in') tryAutoEnablePush('staff');
+  }, [auth.status]);
 
   useEffect(() => {
     api.get<{ user: User | null }>('/api/staff/auth/me').then((res) => {
@@ -307,7 +311,6 @@ function ScheduleView({
           {user.role && <span className="bk-role">（{user.role}）</span>}
         </div>
         <div className="bk-top-right">
-          <PushToggle kind="staff" className="bk-btn" />
           <ThemeToggle theme={theme} onToggle={onToggleTheme} />
           <button className="bk-btn" onClick={onLogout}>登出</button>
         </div>
