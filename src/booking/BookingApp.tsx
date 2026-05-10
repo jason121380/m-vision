@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
 import { Avatar } from '../components/Avatar';
 import { PushToggle } from '../components/PushToggle';
@@ -166,7 +166,6 @@ function ScheduleView({
   const [announcement, setAnnouncement] = useState('');
   const [tab, setTab] = useState<ListTab>('upcoming');
   const [highlightDate, setHighlightDate] = useState<string>('');
-  const itemRefs = useRef<Map<string, HTMLLIElement>>(new Map());
 
   useEffect(() => {
     api.get<{ dates: ScheduleDate[] }>('/api/staff/schedule').then((res) => {
@@ -206,16 +205,15 @@ function ScheduleView({
   const visible = tab === 'upcoming' ? upcoming : past;
 
   // 月曆點到某天 → 切到對應 tab + 高亮 + 滾到那張卡。
-  // 用 setTimeout 讓 React 先 render 完，DOM 才有 ref 可以 scrollIntoView。
+  // 用 setTimeout 讓 React 先 render 完 DOM 才能 querySelector 到。
   const onPickDate = (date: string) => {
     const targetTab: ListTab = date >= today ? 'upcoming' : 'past';
     setTab(targetTab);
     setHighlightDate(date);
     window.setTimeout(() => {
-      const el = itemRefs.current.get(date);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+      // 同日可能多場，跳到第一張就好（後面都緊接著）
+      const el = document.querySelector<HTMLLIElement>(`.bk-list [data-date="${date}"]`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 80);
     // 高亮 2 秒後淡掉
     window.setTimeout(() => setHighlightDate((d) => (d === date ? '' : d)), 2200);
@@ -288,16 +286,14 @@ function ScheduleView({
                 // key={tab} 強制 React 切 tab 時整個 ul 重新 mount，
                 // 避免 reconciliation 把舊 tab 的 li 殘留下來
                 <ul className="bk-list" key={`list-${tab}`}>
-                  {visible.map((d) => (
+                  {visible.map((d, i) => (
                     <ScheduleItem
-                      key={d.date}
+                      // 用 date+index 當 key：同一天可能有多場（午宴 / 晚宴），
+                      // 純用 date 會 React 警告 + 後一筆覆蓋前一筆。
+                      key={`${d.date}-${i}`}
                       d={d}
                       past={tab === 'past'}
                       highlight={highlightDate === d.date}
-                      itemRef={(el) => {
-                        if (el) itemRefs.current.set(d.date, el);
-                        else itemRefs.current.delete(d.date);
-                      }}
                     />
                   ))}
                 </ul>
@@ -314,19 +310,16 @@ function ScheduleItem({
   d,
   past,
   highlight,
-  itemRef,
 }: {
   d: ScheduleDate;
   past: boolean;
   highlight: boolean;
-  itemRef: (el: HTMLLIElement | null) => void;
 }) {
   const dt = new Date(d.date + 'T00:00:00');
   const weekday = ['日', '一', '二', '三', '四', '五', '六'][dt.getDay()];
 
   return (
     <li
-      ref={itemRef}
       data-date={d.date}
       className={`bk-list-item${past ? ' past' : ''}${highlight ? ' highlight' : ''}`}
     >

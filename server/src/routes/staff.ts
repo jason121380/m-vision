@@ -151,61 +151,22 @@ staffRoutes.get('/schedule', async (c) => {
         };
       });
 
-  // 防呆：data.bookings 若有同日多筆（舊資料），先依 date 合併，
-  // leads 取聯集、slots / cams 取最大，避免前台列表出現同日兩張卡。
-  type Merged = {
-    date: string;
-    videoSlots: number;
-    photoSlots: number;
-    videoCamsUsed: number;
-    photoCamsUsed: number;
-    videoLeads: Set<string>;
-    photoLeads: Set<string>;
-    notes: string;
-  };
-  const byDate = new Map<string, Merged>();
-  for (const b of data.bookings) {
-    const date = normalizeDate(b.date);
-    if (!date) continue;
-    const cur = byDate.get(date);
-    if (cur) {
-      cur.videoSlots = Math.max(cur.videoSlots, b.videoSlots);
-      cur.photoSlots = Math.max(cur.photoSlots, b.photoSlots);
-      cur.videoCamsUsed = Math.max(cur.videoCamsUsed, b.videoCamsUsed);
-      cur.photoCamsUsed = Math.max(cur.photoCamsUsed, b.photoCamsUsed);
-      for (const k of b.videoLeads) cur.videoLeads.add(k);
-      for (const k of b.photoLeads) cur.photoLeads.add(k);
-      if (b.notes && !cur.notes.includes(b.notes)) {
-        cur.notes = cur.notes ? `${cur.notes} / ${b.notes}` : b.notes;
-      }
-    } else {
-      byDate.set(date, {
-        date,
-        videoSlots: b.videoSlots,
-        photoSlots: b.photoSlots,
-        videoCamsUsed: b.videoCamsUsed,
-        photoCamsUsed: b.photoCamsUsed,
-        videoLeads: new Set(b.videoLeads),
-        photoLeads: new Set(b.photoLeads),
-        notes: b.notes ?? '',
-      });
-    }
-  }
-
-  const dates = Array.from(byDate.values())
-    .filter((m) => m.videoLeads.has(myKey) || m.photoLeads.has(myKey))
-    .map((m) => ({
-      date: m.date,
-      asVideo: m.videoLeads.has(myKey),
-      asPhoto: m.photoLeads.has(myKey),
-      notes: m.notes,
-      videoSlots: m.videoSlots,
-      photoSlots: m.photoSlots,
-      videoCamsUsed: m.videoCamsUsed,
-      photoCamsUsed: m.photoCamsUsed,
-      videoLeads: expandLeads(Array.from(m.videoLeads)),
-      photoLeads: expandLeads(Array.from(m.photoLeads)),
+  // 不合併：每一筆 booking row 都當獨立的一場顯示（同日多場是合理的，例如午宴 + 晚宴）
+  const dates = data.bookings
+    .filter((b) => b.videoLeads.includes(myKey) || b.photoLeads.includes(myKey))
+    .map((b) => ({
+      date: normalizeDate(b.date),
+      asVideo: b.videoLeads.includes(myKey),
+      asPhoto: b.photoLeads.includes(myKey),
+      notes: b.notes ?? '',
+      videoSlots: b.videoSlots,
+      photoSlots: b.photoSlots,
+      videoCamsUsed: b.videoCamsUsed,
+      photoCamsUsed: b.photoCamsUsed,
+      videoLeads: expandLeads(b.videoLeads),
+      photoLeads: expandLeads(b.photoLeads),
     }))
+    .filter((d) => d.date !== '')
     .sort((a, b) => a.date.localeCompare(b.date));
   return c.json({ dates });
 });
