@@ -1,9 +1,29 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
+import { Avatar } from '../components/Avatar';
+import { PushToggle } from '../components/PushToggle';
 import './booking.css';
 
 type User = { key: string; name: string; role: string; photo?: string };
-type ScheduleDate = { date: string; asVideo: boolean; asPhoto: boolean; notes: string };
+type LeadInfo = {
+  key: string;
+  name: string;
+  role: string;
+  photo: string;
+  isMe: boolean;
+};
+type ScheduleDate = {
+  date: string;
+  asVideo: boolean;
+  asPhoto: boolean;
+  notes: string;
+  videoSlots: number;
+  photoSlots: number;
+  videoCamsUsed: number;
+  photoCamsUsed: number;
+  videoLeads: LeadInfo[];
+  photoLeads: LeadInfo[];
+};
 type AuthState =
   | { status: 'checking' }
   | { status: 'guest' }
@@ -122,6 +142,8 @@ function LoginForm({
   );
 }
 
+type ListTab = 'upcoming' | 'past';
+
 function ScheduleView({
   user,
   onLogout,
@@ -138,6 +160,7 @@ function ScheduleView({
   const [err, setErr] = useState('');
   const [view, setView] = useState(() => new Date());
   const [announcement, setAnnouncement] = useState('');
+  const [tab, setTab] = useState<ListTab>('upcoming');
 
   useEffect(() => {
     api.get<{ dates: ScheduleDate[] }>('/api/staff/schedule').then((res) => {
@@ -158,14 +181,19 @@ function ScheduleView({
     return ymd(t.getFullYear(), t.getMonth() + 1, t.getDate());
   }, []);
 
-  const monthDates = useMemo(() => {
-    const y = view.getFullYear();
-    const m = String(view.getMonth() + 1).padStart(2, '0');
-    const prefix = `${y}-${m}-`;
-    return dates.filter((d) => d.date.startsWith(prefix));
-  }, [dates, view]);
+  const upcoming = useMemo(
+    () => dates.filter((d) => d.date >= today),
+    [dates, today],
+  );
+  const past = useMemo(
+    () =>
+      [...dates]
+        .filter((d) => d.date < today)
+        .sort((a, b) => b.date.localeCompare(a.date)), // 已結束從近到遠
+    [dates, today],
+  );
 
-  const monthLabel = `${view.getFullYear()} 年 ${view.getMonth() + 1} 月`;
+  const visible = tab === 'upcoming' ? upcoming : past;
 
   return (
     <div className="bk-app">
@@ -175,6 +203,7 @@ function ScheduleView({
           {user.role && <span className="bk-role">（{user.role}）</span>}
         </div>
         <div className="bk-top-right">
+          <PushToggle kind="staff" className="bk-btn" />
           <ThemeToggle theme={theme} onToggle={onToggleTheme} />
           <button className="bk-btn" onClick={onLogout}>登出</button>
         </div>
@@ -198,19 +227,33 @@ function ScheduleView({
             <>
               <MyCalendar view={view} setView={setView} dates={dates} today={today} />
 
-              <div className="bk-section-h">{monthLabel}</div>
-              {monthDates.length === 0 && <div className="bk-empty">本月沒有預約</div>}
-              {monthDates.length > 0 && (
+              <div className="bk-tabs" role="tablist">
+                <button
+                  className={`bk-tab${tab === 'upcoming' ? ' on' : ''}`}
+                  onClick={() => setTab('upcoming')}
+                  role="tab"
+                  aria-selected={tab === 'upcoming'}
+                >
+                  即將到來 <span className="bk-tab-count">{upcoming.length}</span>
+                </button>
+                <button
+                  className={`bk-tab${tab === 'past' ? ' on' : ''}`}
+                  onClick={() => setTab('past')}
+                  role="tab"
+                  aria-selected={tab === 'past'}
+                >
+                  已結束 <span className="bk-tab-count">{past.length}</span>
+                </button>
+              </div>
+
+              {visible.length === 0 ? (
+                <div className="bk-empty">
+                  {tab === 'upcoming' ? '目前沒有即將到來的檔期' : '尚無已結束的檔期'}
+                </div>
+              ) : (
                 <ul className="bk-list">
-                  {monthDates.map((d) => (
-                    <li key={d.date} className="bk-list-item">
-                      <div className="bk-list-date">{d.date}</div>
-                      <div className="bk-list-types">
-                        {d.asVideo && <span className="bk-tag v">動態</span>}
-                        {d.asPhoto && <span className="bk-tag p">平面</span>}
-                      </div>
-                      {d.notes && <div className="bk-list-notes">{d.notes}</div>}
-                    </li>
+                  {visible.map((d) => (
+                    <ScheduleItem key={d.date} d={d} past={tab === 'past'} />
                   ))}
                 </ul>
               )}
@@ -219,6 +262,74 @@ function ScheduleView({
         </div>
       </div>
     </div>
+  );
+}
+
+function ScheduleItem({ d, past }: { d: ScheduleDate; past: boolean }) {
+  const dt = new Date(d.date + 'T00:00:00');
+  const weekday = ['日', '一', '二', '三', '四', '五', '六'][dt.getDay()];
+
+  return (
+    <li className={`bk-list-item${past ? ' past' : ''}`}>
+      <div className="bk-item-head">
+        <div className="bk-item-date">
+          <span className="bk-item-date-main">{d.date}</span>
+          <span className="bk-item-date-week">週{weekday}</span>
+        </div>
+        <div className="bk-list-types">
+          {d.asVideo && <span className="bk-tag v">動態</span>}
+          {d.asPhoto && <span className="bk-tag p">平面</span>}
+        </div>
+      </div>
+
+      {(d.videoLeads.length > 0 || d.photoLeads.length > 0) && (
+        <div className="bk-team">
+          {d.videoLeads.length > 0 && (
+            <div className="bk-team-row">
+              <div className="bk-team-h">動態</div>
+              <div className="bk-team-people">
+                {d.videoLeads.map((p) => (
+                  <span key={p.key} className={`bk-person${p.isMe ? ' me' : ''}`}>
+                    <Avatar src={p.photo} name={p.name} size="md" />
+                    <span className="bk-person-meta">
+                      <span className="bk-person-name">{p.name}{p.isMe && ' (你)'}</span>
+                      {p.role && <span className="bk-person-role">{p.role}</span>}
+                    </span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {d.photoLeads.length > 0 && (
+            <div className="bk-team-row">
+              <div className="bk-team-h">平面</div>
+              <div className="bk-team-people">
+                {d.photoLeads.map((p) => (
+                  <span key={p.key} className={`bk-person${p.isMe ? ' me' : ''}`}>
+                    <Avatar src={p.photo} name={p.name} size="md" />
+                    <span className="bk-person-meta">
+                      <span className="bk-person-name">{p.name}{p.isMe && ' (你)'}</span>
+                      {p.role && <span className="bk-person-role">{p.role}</span>}
+                    </span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="bk-stats">
+        {d.asVideo && (
+          <span className="bk-stat">動態 {d.videoSlots} 場 · {d.videoCamsUsed} 機</span>
+        )}
+        {d.asPhoto && (
+          <span className="bk-stat">平面 {d.photoSlots} 場 · {d.photoCamsUsed} 機</span>
+        )}
+      </div>
+
+      {d.notes && <div className="bk-list-notes">📝 {d.notes}</div>}
+    </li>
   );
 }
 

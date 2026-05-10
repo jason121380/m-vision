@@ -8,6 +8,7 @@ import { read, update, dataDir } from '../store/storage.ts';
 import { importFromSheet } from '../store/import-sheet.ts';
 import { syncBookingsToSheet } from '../store/sync-bookings.ts';
 import { requireAdmin } from '../auth/middleware.ts';
+import { pushToAllStaff, pushToStaff } from '../push.ts';
 import type {
   AddonRow,
   BookingRow,
@@ -203,6 +204,28 @@ adminRoutes.put('/settings', async (c) => {
 });
 
 // === bookings 單筆 CRUD（用 array index 當 id） ===
+const notifyStaffNewLeads = (date: string, addedV: string[], addedP: string[]) => {
+  const skip = new Set(['', 'any', 'none']);
+  for (const k of addedV) {
+    if (skip.has(k)) continue;
+    pushToStaff(k, {
+      title: '新預約檔期',
+      body: `${date}　動態`,
+      url: '/booking',
+      tag: `staff-${k}-${date}`,
+    }).catch(() => {});
+  }
+  for (const k of addedP) {
+    if (skip.has(k)) continue;
+    pushToStaff(k, {
+      title: '新預約檔期',
+      body: `${date}　平面`,
+      url: '/booking',
+      tag: `staff-${k}-${date}`,
+    }).catch(() => {});
+  }
+};
+
 adminRoutes.post('/bookings', async (c) => {
   const body = await c.req.json();
   const parsed = bookingSchema.safeParse(body);
@@ -212,6 +235,7 @@ adminRoutes.post('/bookings', async (c) => {
     d.bookings.sort((a, b) => a.date.localeCompare(b.date));
   });
   syncBookingsToSheet(result.bookings).catch(() => {});
+  notifyStaffNewLeads(parsed.data.date, parsed.data.videoLeads, parsed.data.photoLeads);
   return c.json({ ok: true });
 });
 
@@ -220,6 +244,10 @@ adminRoutes.put('/bookings/:id', async (c) => {
   const body = await c.req.json();
   const parsed = bookingSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: 'bad payload', issues: parsed.error.issues }, 400);
+  // 拿原本的 leads 比對，只通知「新增」的主攝；移除不通知
+  const before = (await read()).bookings[id];
+  const beforeV = new Set(before?.videoLeads ?? []);
+  const beforeP = new Set(before?.photoLeads ?? []);
   let updated = false;
   const result = await update((d) => {
     if (id >= 0 && id < d.bookings.length) {
@@ -230,6 +258,9 @@ adminRoutes.put('/bookings/:id', async (c) => {
   });
   if (!updated) return c.json({ error: 'not found' }, 404);
   syncBookingsToSheet(result.bookings).catch(() => {});
+  const addedV = parsed.data.videoLeads.filter((k) => !beforeV.has(k));
+  const addedP = parsed.data.photoLeads.filter((k) => !beforeP.has(k));
+  notifyStaffNewLeads(parsed.data.date, addedV, addedP);
   return c.json({ ok: true });
 });
 
@@ -285,8 +316,62 @@ adminRoutes.put('/announcement', async (c) => {
   const body = await c.req.json();
   const parsed = announcementSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: 'bad payload', issues: parsed.error.issues }, 400);
+  const before = (await read()).announcement ?? '';
+  const after = parsed.data.text;
   await update((d) => {
-    d.announcement = parsed.data.text;
+    d.announcement = after;
+  });
+  // 內容真的有變才推；單純打開儲存不通知
+  if (after.trim() && after !== before) {
+    const preview = after.length > 60 ? after.slice(0, 60) + '…' : after;
+    pushToAllStaff({
+      title: '公告更新',
+      body: preview,
+      url: '/booking',
+      tag: 'announcement',
+    }).catch(() => {});
+  }
+  return c.json({ ok: true });
+});
+
+// === 推播訂閱（admin） ===
+const pushSubSchema = z.object({
+  endpoint: z.string().url(),
+  keys: z.object({ p256dh: z.string().min(1), auth: z.string().min(1) }),
+  userAgent: z.string().optional().default(''),
+});
+
+adminRoutes.post('/push/subscribe', async (c) => {
+  const body = await c.req.json();
+  const parsed = pushSubSchema.safeParse(body);
+  if (!parsed.success) return c.json({ error: 'bad payload', issues: parsed.error.issues }, 400);
+  const { endpoint, keys, userAgent } = parsed.data;
+  await update((d) => {
+    if (!Array.isArray(d.pushSubscriptions)) d.pushSubscriptions = [];
+    // 同 endpoint + admin 算同一台裝置，後寫覆蓋前寫
+    d.pushSubscriptions = d.pushSubscriptions.filter(
+      (s) => !(s.endpoint === endpoint && s.type === 'admin'),
+    );
+    d.pushSubscriptions.push({
+      endpoint,
+      keys,
+      type: 'admin',
+      createdAt: new Date().toISOString(),
+      userAgent,
+    });
+  });
+  return c.json({ ok: true });
+});
+
+adminRoutes.post('/push/unsubscribe', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const endpoint = typeof body?.endpoint === 'string' ? body.endpoint : '';
+  await update((d) => {
+    if (Array.isArray(d.pushSubscriptions)) {
+      d.pushSubscriptions = d.pushSubscriptions.filter(
+        (s) => !(s.endpoint === endpoint && s.type === 'admin'),
+      );
+    }
   });
   return c.json({ ok: true });
 });

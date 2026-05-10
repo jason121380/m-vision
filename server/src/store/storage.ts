@@ -32,6 +32,7 @@ const EMPTY: DataShape = {
   nextAdminId: 1,
   announcement: '',
   media: [],
+  pushSubscriptions: [],
 };
 
 let cache: DataShape | null = null;

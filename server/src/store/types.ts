@@ -63,6 +63,23 @@ export type AdminUser = { id: number; username: string; passwordHash: string };
 export type SessionRow = { token: string; userId: number; expiresAt: number };
 export type StaffSessionRow = { token: string; photographerKey: string; expiresAt: number };
 
+// Web Push 訂閱：同一個 endpoint 在不同身分（admin / staff）算兩筆。
+// 觸發時 server 走 web-push 把 payload 送到瀏覽器（即使 PWA 關著也收得到）。
+export type PushSubscriptionRow = {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+  type: 'admin' | 'staff';
+  staffKey?: string;
+  createdAt: string;
+  userAgent?: string;
+};
+
+export type VapidKeys = {
+  publicKey: string;
+  privateKey: string;
+  subject: string;
+};
+
 export type DataShape = {
   services: ServiceRow[];
   cameras: CameraRow[];
@@ -79,4 +96,6 @@ export type DataShape = {
   nextAdminId: number;
   announcement: string;
   media: MediaRow[];
+  pushSubscriptions: PushSubscriptionRow[];
+  vapid?: VapidKeys;
 };
