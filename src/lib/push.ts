@@ -99,13 +99,12 @@ export async function enablePush(
   return { ok: true };
 }
 
-// 「靜默」嘗試自動開啟推播：已訂閱 / 被擋 / 不支援 → 直接放棄；
-// 權限是 default 時會嘗試呼叫一次 requestPermission（瀏覽器會自己決定要不要彈窗）。
-// 失敗都吞掉，不報錯，因為這條路是預設打開、不打擾使用者。
+// 「靜默」自動重訂閱：只在權限已經 granted、純粹 SW 訂閱遺失（換裝置 / cache 過期）
+// 時自動補回去。permission 是 default / denied / 不支援都直接放棄，由 PushPrompt 引導手動。
 export async function tryAutoEnablePush(kind: PushKind): Promise<void> {
   try {
     if (!isPushSupported()) return;
-    if (Notification.permission === 'denied') return;
+    if (Notification.permission !== 'granted') return;
     const status = await getPushStatus();
     if (status === 'subscribed') return;
     await enablePush(kind);

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { Avatar } from '../components/Avatar';
-import { setupBadgeClearing, tryAutoEnablePush } from '../lib/push';
+import { setupBadgeClearing } from '../lib/push';
+import { PushPrompt } from '../components/PushPrompt';
 import './booking.css';
 
 type User = { key: string; name: string; role: string; photo?: string; isSuperUser?: boolean };
@@ -51,10 +52,6 @@ export function BookingApp() {
   // app 打開 / focus 時清掉紅點
   useEffect(() => setupBadgeClearing(), []);
 
-  // 登入後預設自動開啟推播通知，攝影師不用手動點按鈕
-  useEffect(() => {
-    if (auth.status === 'in') tryAutoEnablePush('staff');
-  }, [auth.status]);
 
   useEffect(() => {
     api.get<{ user: User | null }>('/api/staff/auth/me').then((res) => {
@@ -332,6 +329,7 @@ function ScheduleView({
           )}
         </div>
         <div className="bk-inner">
+          <PushPrompt kind="staff" />
           {announcement.trim() && (
             <div className="bk-announcement" role="status" aria-label="公告">
               <div className="bk-announcement-h">公告</div>
