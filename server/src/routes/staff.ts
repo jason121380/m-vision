@@ -119,6 +119,16 @@ staffRoutes.post('/push/unsubscribe', async (c) => {
   return c.json({ ok: true });
 });
 
+// 把 'YYYY-M-D' / 'YYYY/M/D' / '2026-5-2' 這類雜訊統一補零成 'YYYY-MM-DD'。
+// 沒法解析就回空字串，呼叫端會把它過濾掉。
+const normalizeDate = (raw: unknown): string => {
+  if (typeof raw !== 'string') return '';
+  const t = raw.trim().replace(/\//g, '-');
+  const m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (!m) return '';
+  return `${m[1]}-${m[2]!.padStart(2, '0')}-${m[3]!.padStart(2, '0')}`;
+};
+
 staffRoutes.get('/schedule', async (c) => {
   const token = getCookie(c, STAFF_SESSION_COOKIE) ?? '';
   const sess = await findStaffSession(token);
@@ -144,7 +154,7 @@ staffRoutes.get('/schedule', async (c) => {
   const dates = data.bookings
     .filter((b) => b.videoLeads.includes(myKey) || b.photoLeads.includes(myKey))
     .map((b) => ({
-      date: b.date,
+      date: normalizeDate(b.date),
       asVideo: b.videoLeads.includes(myKey),
       asPhoto: b.photoLeads.includes(myKey),
       notes: b.notes ?? '',
@@ -155,6 +165,7 @@ staffRoutes.get('/schedule', async (c) => {
       videoLeads: expandLeads(b.videoLeads),
       photoLeads: expandLeads(b.photoLeads),
     }))
+    .filter((d) => d.date !== '')
     .sort((a, b) => a.date.localeCompare(b.date));
   return c.json({ dates });
 });

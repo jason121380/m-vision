@@ -95,6 +95,40 @@ export async function enablePush(
   return { ok: true };
 }
 
+// App 打開（focus / visibility 變回前景）時把紅點清掉。
+// 同時告訴 SW 把 IndexedDB 的計數歸零。
+export function clearBadge(): void {
+  try {
+    const nav = navigator as Navigator & {
+      clearAppBadge?: () => Promise<void>;
+    };
+    nav.clearAppBadge?.().catch(() => {});
+  } catch {
+    /* ignore */
+  }
+  try {
+    navigator.serviceWorker?.controller?.postMessage({ type: 'clear-badge' });
+  } catch {
+    /* ignore */
+  }
+}
+
+// 在 useEffect 裡呼叫，回傳 cleanup function。
+// 行為：立刻清一次紅點，並在 app 取得 focus / 變回前景時也清。
+export function setupBadgeClearing(): () => void {
+  if (typeof window === 'undefined') return () => undefined;
+  clearBadge();
+  const onVis = () => {
+    if (!document.hidden) clearBadge();
+  };
+  window.addEventListener('focus', clearBadge);
+  document.addEventListener('visibilitychange', onVis);
+  return () => {
+    window.removeEventListener('focus', clearBadge);
+    document.removeEventListener('visibilitychange', onVis);
+  };
+}
+
 export async function disablePush(kind: PushKind): Promise<{ ok: true }> {
   if (!isPushSupported()) return { ok: true };
   const reg = await navigator.serviceWorker.getRegistration('/sw.js');
