@@ -24,7 +24,6 @@ export const adminRoutes = new Hono();
 adminRoutes.use('*', requireAdmin);
 
 const camTypeEnum = z.enum(['video', 'photo']);
-const photographerTypeEnum = z.enum(['video', 'photo', 'both']);
 
 const servicesSchema = z.array(
   z.object({ key: z.string().min(1), label: z.string().min(1), price: z.number().int() }),
@@ -51,7 +50,7 @@ const addonsSchema = z.array(
 );
 const photographersSchema = z.array(
   z.object({
-    type: photographerTypeEnum,
+    type: camTypeEnum,
     key: z.string().min(1),
     name: z.string().min(1),
     role: z.string().optional().default(''),
@@ -59,8 +58,6 @@ const photographersSchema = z.array(
     photo: z.string().optional().default(''),
     desc: z.string().optional().default(''),
     portfolio: z.string().optional().default(''),
-    portfolioVideo: z.string().optional().default(''),
-    portfolioPhoto: z.string().optional().default(''),
     username: z.string().optional().default(''),
     // 從 admin UI 進來時是明碼；存進 data.json 之前 hash 成 passwordHash
     password: z.string().optional().default(''),
@@ -158,17 +155,6 @@ adminRoutes.put('/photographers', async (c) => {
   const parsed = photographersSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: 'bad payload', issues: parsed.error.issues }, 400);
 
-  // 唯一性檢查：每位攝影師只能有一組登入帳號（一人一 row）
-  const seenUser = new Set<string>();
-  for (const r of parsed.data) {
-    const u = (r.username ?? '').trim();
-    if (!u) continue;
-    if (seenUser.has(u)) {
-      return c.json({ error: `登入帳號重複：「${u}」每位攝影師只能有一組登入帳密` }, 400);
-    }
-    seenUser.add(u);
-  }
-
   // 把現有的 passwordHash 用 key 索引備好。送進來的 row 若 password 留空，保留舊 hash；
   // 有新 password 就 bcrypt hash 後覆蓋。
   const cur = await read();
@@ -194,8 +180,6 @@ adminRoutes.put('/photographers', async (c) => {
       photo: r.photo,
       desc: r.desc,
       portfolio: r.portfolio,
-      portfolioVideo: r.portfolioVideo || undefined,
-      portfolioPhoto: r.portfolioPhoto || undefined,
       username: r.username || undefined,
       passwordHash,
       visible: r.visible,
@@ -473,116 +457,6 @@ adminRoutes.delete('/media/:id', async (c) => {
     }
   }
   return c.json({ ok: true });
-});
-
-// 一鍵合併「同 username」的攝影師 row：取其中一筆當保留者，把另一筆的資訊
-// merge 進來（type → 'both'、作品集分動 / 平、頭像 / 介紹 / 角色 fallback、
-// 密碼 / hash 取一份、isSuperUser or-merge），把 bookings / pushSubscriptions /
-// staffSessions 裡舊 key 全替換成保留者 key，最後把多餘 row 刪掉。
-// 沒填 username 的 row 不動。
-adminRoutes.post('/photographers/merge-duplicates', async (c) => {
-  type Report = {
-    username: string;
-    keptKey: string;
-    removedKeys: string[];
-    bookingsUpdated: number;
-  };
-  const reports: Report[] = [];
-
-  await update((d) => {
-    const byUser = new Map<string, PhotographerRow[]>();
-    for (const p of d.photographers) {
-      const u = (p.username ?? '').trim();
-      if (!u) continue;
-      if (!byUser.has(u)) byUser.set(u, []);
-      byUser.get(u)!.push(p);
-    }
-
-    for (const [username, rows] of byUser) {
-      if (rows.length < 2) continue;
-
-      // 保留者：優先選有密碼的；若都有 / 都沒，選第一筆
-      const withPwd = rows.findIndex((r) => !!r.passwordHash);
-      const keeper = rows[withPwd >= 0 ? withPwd : 0]!;
-      const others = rows.filter((r) => r !== keeper);
-
-      // 類型 → both（除非 rows 全部 type 相同）
-      const allTypes = new Set(rows.map((r) => r.type));
-      if (allTypes.size > 1) keeper.type = 'both';
-
-      // 作品集：把 video row 的舊 portfolio → keeper.portfolioVideo；photo row → portfolioPhoto
-      // 已有的就不覆蓋（保留 keeper 既有資料）
-      for (const r of rows) {
-        if (r.type === 'video' || r.type === 'both') {
-          const v = r.portfolioVideo || (r.type === 'video' ? r.portfolio : '');
-          if (v && !keeper.portfolioVideo) keeper.portfolioVideo = v;
-        }
-        if (r.type === 'photo' || r.type === 'both') {
-          const p = r.portfolioPhoto || (r.type === 'photo' ? r.portfolio : '');
-          if (p && !keeper.portfolioPhoto) keeper.portfolioPhoto = p;
-        }
-      }
-      // 其餘欄位：keeper 沒填就向其他 row 借
-      for (const r of others) {
-        if (!keeper.photo && r.photo) keeper.photo = r.photo;
-        if (!keeper.desc && r.desc) keeper.desc = r.desc;
-        if (!keeper.role && r.role) keeper.role = r.role;
-        if (!keeper.passwordHash && r.passwordHash) keeper.passwordHash = r.passwordHash;
-      }
-      keeper.isSuperUser = rows.some((r) => r.isSuperUser);
-
-      // bookings：videoLeads / photoLeads 把舊 key 全替換成 keeper.key，順便去重
-      const removedKeys = others.map((r) => r.key);
-      const removedSet = new Set(removedKeys);
-      let bookingsUpdated = 0;
-      for (const b of d.bookings) {
-        let touched = false;
-        const remap = (arr: string[]) =>
-          Array.from(
-            new Set(
-              arr.map((k) => {
-                if (removedSet.has(k)) {
-                  touched = true;
-                  return keeper.key;
-                }
-                return k;
-              }),
-            ),
-          );
-        b.videoLeads = remap(b.videoLeads);
-        b.photoLeads = remap(b.photoLeads);
-        if (touched) bookingsUpdated++;
-      }
-
-      // pushSubscriptions / staffSessions：把舊 key 改成保留者 key
-      if (Array.isArray(d.pushSubscriptions)) {
-        for (const s of d.pushSubscriptions) {
-          if (s.type === 'staff' && s.staffKey && removedSet.has(s.staffKey)) {
-            s.staffKey = keeper.key;
-          }
-        }
-      }
-      if (Array.isArray(d.staffSessions)) {
-        for (const s of d.staffSessions) {
-          if (removedSet.has(s.photographerKey)) {
-            s.photographerKey = keeper.key;
-          }
-        }
-      }
-
-      // 把 others 從 photographers 移掉
-      d.photographers = d.photographers.filter((p) => !others.includes(p));
-
-      reports.push({
-        username,
-        keptKey: keeper.key,
-        removedKeys,
-        bookingsUpdated,
-      });
-    }
-  });
-
-  return c.json({ ok: true, mergedGroups: reports.length, reports });
 });
 
 // 從 Google Sheet 公開 CSV 整張覆蓋（bookings 是 upsert）

@@ -51,18 +51,13 @@ export function BookingsView() {
     load();
   }, []);
 
-  // 過濾掉 any（輪班）跟 none（佔位），這兩個不能被綁。
-  // 'both' 類型同時出現於兩邊，行政可以把同一人綁成動態或平面主攝
+  // 過濾掉 any（輪班）跟 none（佔位），這兩個不能被綁
   const videoPpl = useMemo(
-    () => photographers.filter(
-      (p) => (p.type === 'video' || p.type === 'both') && p.key !== 'any' && p.key !== 'none',
-    ),
+    () => photographers.filter((p) => p.type === 'video' && p.key !== 'any' && p.key !== 'none'),
     [photographers],
   );
   const photoPpl = useMemo(
-    () => photographers.filter(
-      (p) => (p.type === 'photo' || p.type === 'both') && p.key !== 'any' && p.key !== 'none',
-    ),
+    () => photographers.filter((p) => p.type === 'photo' && p.key !== 'any' && p.key !== 'none'),
     [photographers],
   );
 

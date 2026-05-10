@@ -7,7 +7,6 @@ import { SettingsView } from './SettingsView';
 import { SubmissionsView } from './SubmissionsView';
 import { AnnouncementView } from './AnnouncementView';
 import { MediaView } from './MediaView';
-import { MergeDuplicatesButton } from './MergeDuplicatesButton';
 import { PushToggle } from '../components/PushToggle';
 import { listenSwMessage, setupBadgeClearing } from '../lib/push';
 import './admin.css';
@@ -292,12 +291,12 @@ function Section({ tab }: { tab: TabKey }) {
     return (
       <Editor<PhotographerRow>
         title="攝影師"
-        hint="一個人一筆。類型選「平面 + 動態」的人會同時出現在前台動態與平面選單，後台預約檔期勾選時也會同時出現在兩邊。「動態作品集」「平面作品集」可分別填，純動態 / 純平面的人填對應那一格即可。每位攝影師只能有一組登入帳密；登入帳號全站不可重複。「最高主管」勾起來的人登入 /booking 看得到全部檔期。"
+        hint="客戶第二頁選的指定攝影師，類型分動態 / 平面分開列。同一個人若既能拍動態又能拍平面 → 開兩筆。每個類型第一筆「不指定（輪班）」是預設選項不可刪除。頭像可貼 Drive 分享連結或外部 https 圖片網址。設定帳號 / 密碼後，攝影師可到 /booking 用該帳密登入查看自己的預約檔期。「最高主管」勾起來的人登入後會看到所有攝影師的檔期，不只自己被綁的。"
         path="photographers"
         modalAdd
         addLabel="新增攝影師"
         columns={[
-          { key: 'type', label: '類型', type: 'enum', options: ['video', 'photo', 'both'], optionLabels: { video: '動態', photo: '平面', both: '平面 + 動態' }, width: '12%' },
+          { key: 'type', label: '類型', type: 'enum', options: ['video', 'photo'], optionLabels: { video: '動態', photo: '平面' }, width: '10%' },
           { key: 'name', label: '名字', type: 'text' },
           { key: 'role', label: '角色', type: 'text' },
           { key: 'price', label: '價格', type: 'number', width: '10%' },
@@ -307,27 +306,10 @@ function Section({ tab }: { tab: TabKey }) {
           { key: 'password', label: '登入密碼', type: 'password' },
           { key: 'photo', label: '頭像', type: 'text' },
           { key: 'desc', label: '介紹', type: 'longtext' },
-          { key: 'portfolioVideo', label: '動態作品集', type: 'text' },
-          { key: 'portfolioPhoto', label: '平面作品集', type: 'text' },
+          { key: 'portfolio', label: '作品集', type: 'text' },
         ]}
-        blank={() => ({ type: 'video', key: genKey(), name: '', role: '', price: 1000, photo: '', desc: '', portfolio: '', portfolioVideo: '', portfolioPhoto: '', username: '', password: '', visible: true, isSuperUser: false })}
+        blank={() => ({ type: 'video', key: genKey(), name: '', role: '', price: 1000, photo: '', desc: '', portfolio: '', username: '', password: '', visible: true, isSuperUser: false })}
         locked={(r) => r.key === 'any'}
-        validate={(rows) => {
-          // 一人一 row：登入帳號全站唯一
-          const seen = new Map<string, number>();
-          for (let i = 0; i < rows.length; i++) {
-            const u = String(rows[i]!.username ?? '').trim();
-            if (!u) continue;
-            if (seen.has(u)) {
-              const first = seen.get(u)! + 1;
-              const dup = i + 1;
-              return `登入帳號「${u}」重複（第 ${first} 列與第 ${dup} 列），每位攝影師只能有一組登入帳密`;
-            }
-            seen.set(u, i);
-          }
-          return null;
-        }}
-        extraToolbar={({ reload }) => <MergeDuplicatesButton onDone={reload} />}
       />
     );
   }

@@ -21,18 +21,14 @@ export type CeremonyRow = {
 export type AddonRow = { id?: number; key: string; label: string; price: number; sortOrder?: number };
 export type PhotographerRow = {
   id?: number;
-  type: 'video' | 'photo' | 'both';
+  type: 'video' | 'photo';
   key: string;
   name: string;
   role: string;
   price: number;
   photo: string;
   desc: string;
-  // 舊版單一作品集連結（仍存在 data.json，前台顯示時當 fallback 用）
   portfolio: string;
-  // 動態 / 平面分開的作品集連結；type='both' 兩個都會用到
-  portfolioVideo?: string;
-  portfolioPhoto?: string;
   sortOrder?: number;
   username?: string;
   // password 是 form-only，admin 在表單填新密碼後送出，server 會 hash

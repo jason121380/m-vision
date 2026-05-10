@@ -18,27 +18,16 @@ export function Page2({ state, update, config }: Props) {
   // 隱藏「無選（key=none）」與「visible=false」的攝影師；保留「不指定（輪班）」
   const isShown = (p: { key: string; visible?: boolean }) =>
     p.key !== 'none' && p.visible !== false;
-  // 'both' 類型同時出現於兩邊，客戶可以指定當動態主攝或平面主攝
-  const videoPhotographers = config.photographers.filter(
-    (p) => (p.type === 'video' || p.type === 'both') && isShown(p),
-  );
-  const photoPhotographers = config.photographers.filter(
-    (p) => (p.type === 'photo' || p.type === 'both') && isShown(p),
-  );
+  const videoPhotographers = config.photographers.filter((p) => p.type === 'video' && isShown(p));
+  const photoPhotographers = config.photographers.filter((p) => p.type === 'photo' && isShown(p));
 
   const renderPhotographer = (
     p: (typeof videoPhotographers)[number],
     selected: boolean,
     onSelect: () => void,
-    side: 'video' | 'photo',
   ) => {
     const isAny = p.key === 'any';
     const blocked = !isAny && photographerBlocked(config, dateKey, p.key);
-    // 同一人在動 / 平兩邊各有一個作品集連結；沒填則 fallback 舊版單一 portfolio
-    const portfolioUrl =
-      side === 'video'
-        ? (p.portfolioVideo || p.portfolio || '')
-        : (p.portfolioPhoto || p.portfolio || '');
     return (
       <div
         key={p.key}
@@ -87,15 +76,15 @@ export function Page2({ state, update, config }: Props) {
             </div>
           )}
           {!isAny && p.desc && <div className="pdesc">{p.desc}</div>}
-          {!isAny && portfolioUrl && (
+          {!isAny && p.portfolio && (
             <a
               className="pportfolio"
-              href={portfolioUrl}
+              href={p.portfolio}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
             >
-              查看{side === 'video' ? '動態' : '平面'}作品集 ↗
+              查看作品集 ↗
             </a>
           )}
         </div>
@@ -139,7 +128,7 @@ export function Page2({ state, update, config }: Props) {
           </div>
           <div className="pcard">
             {videoPhotographers.map((p) =>
-              renderPhotographer(p, state.vpKey === p.key, () => update({ vpKey: p.key }), 'video'),
+              renderPhotographer(p, state.vpKey === p.key, () => update({ vpKey: p.key })),
             )}
           </div>
         </div>
@@ -151,7 +140,7 @@ export function Page2({ state, update, config }: Props) {
           </div>
           <div className="pcard">
             {photoPhotographers.map((p) =>
-              renderPhotographer(p, state.ppKey === p.key, () => update({ ppKey: p.key }), 'photo'),
+              renderPhotographer(p, state.ppKey === p.key, () => update({ ppKey: p.key })),
             )}
           </div>
         </div>

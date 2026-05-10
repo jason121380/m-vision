@@ -23,8 +23,8 @@ export function PrintableContract({ state, config }: Props) {
     .map((k) => config.addons.find((a) => a.key === k))
     .filter((a): a is NonNullable<typeof a> => !!a);
   const addonTotal = pickedAddons.reduce((s, a) => s + a.price, 0);
-  const vp = config.photographers.find((p) => p.key === state.vpKey);
-  const pp = config.photographers.find((p) => p.key === state.ppKey);
+  const vp = config.photographers.find((p) => p.type === 'video' && p.key === state.vpKey);
+  const pp = config.photographers.find((p) => p.type === 'photo' && p.key === state.ppKey);
 
   const total =
     videoBase + photoBase + (vc?.price ?? 0) + (pc?.price ?? 0) +
