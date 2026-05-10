@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { Avatar } from '../components/Avatar';
 import { PushToggle } from '../components/PushToggle';
@@ -167,19 +167,99 @@ function ScheduleView({
   const [tab, setTab] = useState<ListTab>('upcoming');
   const [highlightDate, setHighlightDate] = useState<string>('');
 
-  useEffect(() => {
-    api.get<{ dates: ScheduleDate[] }>('/api/staff/schedule').then((res) => {
-      if (res.ok) setDates(res.data.dates);
-      else setErr(res.error);
-      setLoading(false);
-    });
+  // 一次刷新行程表 + 公告，給首次載入跟下拉刷新共用
+  const refresh = useCallback(async () => {
+    const [sched, ann] = await Promise.all([
+      api.get<{ dates: ScheduleDate[] }>('/api/staff/schedule'),
+      api.get<{ text: string }>('/api/announcement'),
+    ]);
+    if (sched.ok) {
+      setDates(sched.data.dates);
+      setErr('');
+    } else {
+      setErr(sched.error);
+    }
+    if (ann.ok) setAnnouncement(ann.data.text ?? '');
   }, []);
 
   useEffect(() => {
-    api.get<{ text: string }>('/api/announcement').then((res) => {
-      if (res.ok) setAnnouncement(res.data.text ?? '');
-    });
-  }, []);
+    refresh().finally(() => setLoading(false));
+  }, [refresh]);
+
+  // === 下拉刷新 ===
+  // bk-content 是滾動容器；scrollTop===0 才允許下拉，超過 60px 放開觸發 refresh
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [pullY, setPullY] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const refreshingRef = useRef(refreshing);
+  refreshingRef.current = refreshing;
+  const pullYRef = useRef(0);
+  pullYRef.current = pullY;
+  const PULL_THRESHOLD = 60;
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    let startY = 0;
+    let pulling = false;
+
+    const onStart = (e: TouchEvent) => {
+      if (el.scrollTop > 0 || refreshingRef.current) {
+        pulling = false;
+        return;
+      }
+      startY = e.touches[0]?.clientY ?? 0;
+      pulling = true;
+    };
+    const onMove = (e: TouchEvent) => {
+      if (!pulling) return;
+      const dy = (e.touches[0]?.clientY ?? 0) - startY;
+      if (dy > 0 && el.scrollTop === 0) {
+        // 阻力：拉得越多增量越小，最多 120
+        const y = Math.min(120, dy * 0.42);
+        setPullY(y);
+        if (dy > 8) e.preventDefault();
+      } else if (dy < 0) {
+        // 用戶反向滑：當作取消
+        pulling = false;
+        setPullY(0);
+      }
+    };
+    const onEnd = async () => {
+      if (!pulling) return;
+      pulling = false;
+      if (pullYRef.current >= PULL_THRESHOLD) {
+        setRefreshing(true);
+        setPullY(56); // 釘住一個高度顯示 spinner
+        try {
+          await refresh();
+          await new Promise((r) => setTimeout(r, 280));
+        } finally {
+          setRefreshing(false);
+          setPullY(0);
+        }
+      } else {
+        setPullY(0);
+      }
+    };
+
+    el.addEventListener('touchstart', onStart, { passive: true });
+    el.addEventListener('touchmove', onMove, { passive: false });
+    el.addEventListener('touchend', onEnd);
+    el.addEventListener('touchcancel', onEnd);
+    return () => {
+      el.removeEventListener('touchstart', onStart);
+      el.removeEventListener('touchmove', onMove);
+      el.removeEventListener('touchend', onEnd);
+      el.removeEventListener('touchcancel', onEnd);
+    };
+  }, [refresh]);
+
+  const ptrLabel = refreshing
+    ? '刷新中…'
+    : pullY >= PULL_THRESHOLD
+      ? '放開以刷新'
+      : '下拉以刷新';
 
   const today = useMemo(() => {
     const t = new Date();
@@ -233,7 +313,21 @@ function ScheduleView({
         </div>
       </div>
 
-      <div className="bk-content">
+      <div className="bk-content" ref={scrollRef}>
+        <div
+          className={`bk-ptr${refreshing ? ' refreshing' : ''}${pullY >= PULL_THRESHOLD ? ' ready' : ''}`}
+          style={{ height: pullY }}
+          aria-hidden={pullY === 0 && !refreshing}
+        >
+          {(pullY > 0 || refreshing) && (
+            <div className="bk-ptr-inner">
+              <span className={`bk-ptr-icon${refreshing ? ' spin' : ''}`}>
+                {refreshing ? '◌' : pullY >= PULL_THRESHOLD ? '↑' : '↓'}
+              </span>
+              <span>{ptrLabel}</span>
+            </div>
+          )}
+        </div>
         <div className="bk-inner">
           {announcement.trim() && (
             <div className="bk-announcement" role="status" aria-label="公告">
