@@ -63,8 +63,8 @@ async function loadHtml(): Promise<{ pub: string; admin: string; booking: string
   // /booking* 用 booking.webmanifest（start_url=/booking），加到主畫面才會直接落 /booking
   bookingHtml = raw
     .replace('/manifest.webmanifest', '/booking.webmanifest')
-    .replace('content="M 視覺"', 'content="M 視覺攝影師"')
-    .replace('<title>M 視覺影像記錄公司</title>', '<title>M 視覺攝影師</title>')
+    .replace('content="M 視覺"', 'content="M 視覺預約"')
+    .replace('<title>M 視覺影像記錄公司</title>', '<title>M 視覺預約</title>')
     .replace(/href="\/logo\.jpg"/g, 'href="/black.jpg"');
   return { pub: publicHtml, admin: adminHtml, booking: bookingHtml };
 }

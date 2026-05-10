@@ -37,9 +37,9 @@ if (typeof document !== 'undefined') {
     if (themeMeta) themeMeta.setAttribute('content', '#000000');
   }
   if (isBooking) {
-    document.title = 'M 視覺攝影師';
+    document.title = 'M 視覺預約';
     const titleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
-    if (titleMeta) titleMeta.setAttribute('content', 'M 視覺攝影師');
+    if (titleMeta) titleMeta.setAttribute('content', 'M 視覺預約');
     const themeMeta = document.querySelector('meta[name="theme-color"]');
     if (themeMeta) themeMeta.setAttribute('content', '#000000');
   }
