@@ -125,6 +125,22 @@ staffRoutes.get('/schedule', async (c) => {
   if (!sess) return c.json({ error: 'unauthorized' }, 401);
   const data = await read();
   const myKey = sess.photographerKey;
+
+  const photoById = new Map(data.photographers.map((p) => [p.key, p]));
+  const expandLeads = (keys: string[]) =>
+    keys
+      .filter((k) => k && k !== 'any' && k !== 'none')
+      .map((k) => {
+        const p = photoById.get(k);
+        return {
+          key: k,
+          name: p?.name ?? k,
+          role: p?.role ?? '',
+          photo: p?.photo ?? '',
+          isMe: k === myKey,
+        };
+      });
+
   const dates = data.bookings
     .filter((b) => b.videoLeads.includes(myKey) || b.photoLeads.includes(myKey))
     .map((b) => ({
@@ -132,6 +148,12 @@ staffRoutes.get('/schedule', async (c) => {
       asVideo: b.videoLeads.includes(myKey),
       asPhoto: b.photoLeads.includes(myKey),
       notes: b.notes ?? '',
+      videoSlots: b.videoSlots,
+      photoSlots: b.photoSlots,
+      videoCamsUsed: b.videoCamsUsed,
+      photoCamsUsed: b.photoCamsUsed,
+      videoLeads: expandLeads(b.videoLeads),
+      photoLeads: expandLeads(b.photoLeads),
     }))
     .sort((a, b) => a.date.localeCompare(b.date));
   return c.json({ dates });
