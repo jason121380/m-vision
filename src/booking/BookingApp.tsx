@@ -20,7 +20,7 @@ export function BookingApp() {
   const [theme, setTheme] = useState<Theme>(readTheme);
 
   useEffect(() => {
-    document.title = '攝影師預約檔期';
+    document.title = 'M 視覺預約';
   }, []);
 
   useEffect(() => {

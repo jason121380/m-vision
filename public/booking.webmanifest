@@ -1,7 +1,7 @@
 {
-  "name": "M 視覺攝影師",
-  "short_name": "M 視覺攝影師",
-  "description": "M 視覺影像記錄公司攝影師專區",
+  "name": "M 視覺預約",
+  "short_name": "M 視覺預約",
+  "description": "M 視覺影像記錄公司攝影師預約檔期",
   "start_url": "/booking",
   "scope": "/booking",
   "display": "standalone",
