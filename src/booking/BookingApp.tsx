@@ -281,11 +281,13 @@ function ScheduleView({
               </div>
 
               {visible.length === 0 ? (
-                <div className="bk-empty">
+                <div className="bk-empty" key={`empty-${tab}`}>
                   {tab === 'upcoming' ? '目前沒有即將到來的檔期' : '尚無已結束的檔期'}
                 </div>
               ) : (
-                <ul className="bk-list">
+                // key={tab} 強制 React 切 tab 時整個 ul 重新 mount，
+                // 避免 reconciliation 把舊 tab 的 li 殘留下來
+                <ul className="bk-list" key={`list-${tab}`}>
                   {visible.map((d) => (
                     <ScheduleItem
                       key={d.date}

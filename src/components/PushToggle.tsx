@@ -3,9 +3,7 @@ import {
   disablePush,
   enablePush,
   getPushStatus,
-  isBadgeSupported,
   isPushSupported,
-  setBadgeManual,
   type PushKind,
   type PushStatus,
 } from '../lib/push';
@@ -20,7 +18,6 @@ export function PushToggle({ kind, className }: Props) {
   const [status, setStatus] = useState<PushStatus>('idle');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string>('');
-  const [showTest, setShowTest] = useState(false);
 
   useEffect(() => {
     if (!isPushSupported()) {
@@ -49,32 +46,17 @@ export function PushToggle({ kind, className }: Props) {
     if (status === 'subscribed') {
       await disablePush(kind);
       setStatus('idle');
-      setShowTest(false);
       setMsg('已關閉通知');
     } else {
       const res = await enablePush(kind);
       if (res.ok) {
         setStatus('subscribed');
-        setShowTest(true);
         setMsg('已開啟通知');
       } else {
         setMsg(res.error);
       }
     }
     setBusy(false);
-  };
-
-  const onTestBadge = async () => {
-    if (!isBadgeSupported()) {
-      setMsg('裝置不支援 App Badge（紅點）— iOS 需 16.4+ 且已加入主畫面');
-      return;
-    }
-    const res = await setBadgeManual(1);
-    if (res.ok) {
-      setMsg('已點亮紅點 → 切到主畫面看 icon，回到 app 會自動清掉');
-    } else {
-      setMsg('紅點測試失敗：' + res.reason);
-    }
   };
 
   const label =
@@ -94,16 +76,6 @@ export function PushToggle({ kind, className }: Props) {
       >
         {label}
       </button>
-      {(status === 'subscribed' || showTest) && (
-        <button
-          type="button"
-          className={className}
-          onClick={onTestBadge}
-          title="把 PWA icon 上的紅點點亮一次（驗證裝置支援度）"
-        >
-          測試紅點
-        </button>
-      )}
       {msg && <span style={{ fontSize: 11, color: 'var(--ink-muted)' }}>{msg}</span>}
     </span>
   );
