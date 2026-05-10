@@ -49,8 +49,9 @@
 .bk-cal-cell.booked:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .bk-cal-num{font-size:13px;line-height:1.4}
 .bk-cal-tags{display:flex;gap:2px;margin-top:auto;flex-wrap:wrap;justify-content:center;line-height:1}
-.bk-cal-tag{font-size:9px;padding:2px 4px;border-radius:3px;background:var(--accent);color:#fff;font-weight:600}
-.bk-cal-tag.p{background:#9f6cd2}
+.bk-cal-tag{font-size:9px;padding:2px 4px;border-radius:3px;color:#fff;font-weight:600}
+.bk-cal-tag.v{background:var(--accent)}
+.bk-cal-tag.p{background:#d265a0}
 
 /* List */
 .bk-section-h{font-size:14px;font-weight:600;letter-spacing:.06em;margin:24px 0 10px;color:var(--ink-soft)}
@@ -71,7 +72,7 @@
 .bk-list-types{display:flex;gap:6px;flex-shrink:0}
 .bk-tag{font-size:11px;padding:3px 10px;border-radius:999px;color:#fff;font-weight:500;line-height:1.5}
 .bk-tag.v{background:var(--accent)}
-.bk-tag.p{background:#9f6cd2}
+.bk-tag.p{background:#d265a0}
 .bk-list-notes{font-size:12.5px;color:var(--ink-muted);background:var(--bg);padding:8px 10px;border-radius:8px;line-height:1.5;border:1px solid var(--line)}
 
 /* Tabs */
