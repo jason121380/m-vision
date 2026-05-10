@@ -8,6 +8,7 @@ import { SubmissionsView } from './SubmissionsView';
 import { AnnouncementView } from './AnnouncementView';
 import { MediaView } from './MediaView';
 import { PushToggle } from '../components/PushToggle';
+import { setupBadgeClearing } from '../lib/push';
 import './admin.css';
 import type {
   AddonRow,
@@ -59,6 +60,9 @@ export function AdminApp() {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  // app 打開 / focus 時清掉紅點（系統會自己把 badge 拉掉）
+  useEffect(() => setupBadgeClearing(), []);
 
   const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
 
