@@ -17,7 +17,7 @@ export function computeTotal(state: FormState, config: AppConfig): number {
   const vcer = isV ? findPrice(config.ceremonies.filter((c) => c.type === 'video'), state.vcerKey) : 0;
   const pcer = isP ? findPrice(config.ceremonies.filter((c) => c.type === 'photo'), state.pcerKey) : 0;
 
-  const addon = findPrice(config.addons, state.addonKey);
+  const addon = state.addonKeys.reduce((sum, k) => sum + findPrice(config.addons, k), 0);
 
   const vp = isV
     ? findPrice(
@@ -62,8 +62,20 @@ export function buildSummary(state: FormState, config: AppConfig): SummaryRow[] 
     const pcer = config.ceremonies.find((c) => c.type === 'photo' && c.key === state.pcerKey);
     rows.push({ lbl: '拍照儀式', val: pcer?.label ?? '—', amt: pcer?.price ?? 0 });
   }
-  const addon = config.addons.find((a) => a.key === state.addonKey);
-  rows.push({ lbl: '加選項目', val: addon?.label ?? '無', amt: addon?.price ?? 0 });
+  const pickedAddons = state.addonKeys
+    .map((k) => config.addons.find((a) => a.key === k))
+    .filter((a): a is NonNullable<typeof a> => !!a);
+  if (pickedAddons.length === 0) {
+    rows.push({ lbl: '加選項目', val: '無', amt: 0 });
+  } else {
+    pickedAddons.forEach((a, idx) => {
+      rows.push({
+        lbl: idx === 0 ? '加選項目' : '　　　　',
+        val: a.label,
+        amt: a.price,
+      });
+    });
+  }
   if (isV) {
     const vp = config.photographers.find((p) => p.type === 'video' && p.key === state.vpKey);
     const name = vp ? (vp.role ? `${vp.name}（${vp.role}）` : vp.name) : '—';

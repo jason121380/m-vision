@@ -19,13 +19,16 @@ export function PrintableContract({ state, config }: Props) {
   const pc = config.cameras.find((c) => c.type === 'photo' && c.key === state.pcKey);
   const vcer = config.ceremonies.find((c) => c.type === 'video' && c.key === state.vcerKey);
   const pcer = config.ceremonies.find((c) => c.type === 'photo' && c.key === state.pcerKey);
-  const addon = config.addons.find((a) => a.key === state.addonKey);
+  const pickedAddons = state.addonKeys
+    .map((k) => config.addons.find((a) => a.key === k))
+    .filter((a): a is NonNullable<typeof a> => !!a);
+  const addonTotal = pickedAddons.reduce((s, a) => s + a.price, 0);
   const vp = config.photographers.find((p) => p.type === 'video' && p.key === state.vpKey);
   const pp = config.photographers.find((p) => p.type === 'photo' && p.key === state.ppKey);
 
   const total =
     videoBase + photoBase + (vc?.price ?? 0) + (pc?.price ?? 0) +
-    (vcer?.price ?? 0) + (pcer?.price ?? 0) + (addon?.price ?? 0) +
+    (vcer?.price ?? 0) + (pcer?.price ?? 0) + addonTotal +
     (vp?.price ?? 0) + (pp?.price ?? 0);
   const balance = total > 0 ? total - deposit : 0;
 
@@ -119,9 +122,9 @@ export function PrintableContract({ state, config }: Props) {
         {isP && pcer && (
           <div style={rowStyle}><span>拍照儀式（{pcer.label}）</span><span>{pcer.price.toLocaleString('zh-TW')} 元</span></div>
         )}
-        {addon && addon.price > 0 && (
-          <div style={rowStyle}><span>加選（{addon.label}）</span><span>{addon.price.toLocaleString('zh-TW')} 元</span></div>
-        )}
+        {pickedAddons.filter((a) => a.price > 0).map((a) => (
+          <div key={a.key} style={rowStyle}><span>加選（{a.label}）</span><span>{a.price.toLocaleString('zh-TW')} 元</span></div>
+        ))}
         {isV && vp && vp.price > 0 && (
           <div style={rowStyle}><span>指定錄影師（{vp.name}）</span><span>{vp.price.toLocaleString('zh-TW')} 元</span></div>
         )}

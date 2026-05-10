@@ -137,12 +137,19 @@ function ScheduleView({
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [view, setView] = useState(() => new Date());
+  const [announcement, setAnnouncement] = useState('');
 
   useEffect(() => {
     api.get<{ dates: ScheduleDate[] }>('/api/staff/schedule').then((res) => {
       if (res.ok) setDates(res.data.dates);
       else setErr(res.error);
       setLoading(false);
+    });
+  }, []);
+
+  useEffect(() => {
+    api.get<{ text: string }>('/api/announcement').then((res) => {
+      if (res.ok) setAnnouncement(res.data.text ?? '');
     });
   }, []);
 
@@ -175,6 +182,13 @@ function ScheduleView({
 
       <div className="bk-content">
         <div className="bk-inner">
+          {announcement.trim() && (
+            <div className="bk-announcement" role="status" aria-label="公告">
+              <div className="bk-announcement-h">公告</div>
+              <div className="bk-announcement-body">{announcement}</div>
+            </div>
+          )}
+
           <h2>我的預約檔期</h2>
 
           {loading && <div className="bk-status">載入中…</div>}

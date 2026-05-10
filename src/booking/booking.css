@@ -28,6 +28,11 @@
 .bk-login-card button:active{transform:scale(.96)}
 .bk-login-card button:disabled{opacity:.5;cursor:not-allowed}
 
+/* Announcement */
+.bk-announcement{margin-bottom:18px;padding:14px 16px;background:var(--accent-soft);border:1px solid var(--accent);border-left:4px solid var(--accent);border-radius:var(--r-md);color:var(--ink)}
+.bk-announcement-h{font-size:11px;letter-spacing:.18em;font-weight:700;color:var(--accent);margin-bottom:6px}
+.bk-announcement-body{font-size:13.5px;line-height:1.7;color:var(--ink);white-space:pre-wrap;word-break:break-word}
+
 /* Calendar */
 .bk-cal{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--r-md);padding:14px;box-shadow:var(--shadow-sm)}
 .bk-cal-head{display:flex;justify-content:space-between;align-items:center;padding:0 4px 12px;border-bottom:1px solid var(--line);margin-bottom:10px;font-size:15px;font-weight:600}

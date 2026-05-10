@@ -30,6 +30,8 @@ const EMPTY: DataShape = {
   staffSessions: [],
   nextSubmissionId: 1,
   nextAdminId: 1,
+  announcement: '',
+  media: [],
 };
 
 let cache: DataShape | null = null;

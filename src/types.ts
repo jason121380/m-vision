@@ -59,7 +59,7 @@ export type FormState = {
   pcKey: string;
   vcerKey: string;
   pcerKey: string;
-  addonKey: string;
+  addonKeys: string[];
   vpKey: string;
   ppKey: string;
   groom: string;
@@ -90,7 +90,7 @@ export const initialState: FormState = {
   pcKey: '',
   vcerKey: '',
   pcerKey: '',
-  addonKey: 'none',
+  addonKeys: [],
   vpKey: '',
   ppKey: '',
   groom: '',

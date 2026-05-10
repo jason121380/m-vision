@@ -22,6 +22,12 @@ export type PhotographerRow = {
   visible?: boolean;
 };
 export type SettingsMap = Record<string, string>;
+export type MediaRow = {
+  type: 'image' | 'video';
+  url: string;
+  alt: string;
+  poster: string;
+};
 export type BookingRow = {
   date: string;
   videoSlots: number;
@@ -71,4 +77,6 @@ export type DataShape = {
   staffSessions: StaffSessionRow[];
   nextSubmissionId: number;
   nextAdminId: number;
+  announcement: string;
+  media: MediaRow[];
 };

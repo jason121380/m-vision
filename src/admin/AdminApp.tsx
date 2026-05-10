@@ -5,6 +5,8 @@ import { BookingsView } from './BookingsView';
 import { ServicesView } from './ServicesView';
 import { SettingsView } from './SettingsView';
 import { SubmissionsView } from './SubmissionsView';
+import { AnnouncementView } from './AnnouncementView';
+import { MediaView } from './MediaView';
 import './admin.css';
 import type {
   AddonRow,
@@ -39,10 +41,11 @@ const SETTINGS_SUBTABS = [
   { key: 'ceremonies', label: '儀式' },
   { key: 'addons', label: '加選項目' },
   { key: 'photographers', label: '攝影師' },
+  { key: 'media', label: '網站 Banner' },
 ] as const;
 
 type SettingsTabKey = (typeof SETTINGS_SUBTABS)[number]['key'];
-type TabKey = SettingsTabKey | 'bookings' | 'submissions';
+type TabKey = SettingsTabKey | 'bookings' | 'submissions' | 'announcement';
 
 export function AdminApp() {
   const [auth, setAuth] = useState<AuthState>({ status: 'checking' });
@@ -145,6 +148,12 @@ export function AdminApp() {
           >
             收單紀錄
           </button>
+          <button
+            className={tab === 'announcement' ? 'active' : ''}
+            onClick={() => setTab('announcement')}
+          >
+            發佈公告
+          </button>
         </div>
         <div className="admin-content">
           <Section tab={tab} />
@@ -240,7 +249,7 @@ function Section({ tab }: { tab: TabKey }) {
     return (
       <Editor<AddonRow>
         title="加選項目"
-        hint="客戶第二頁的選配項目（SDE 快剪快播、REELS 短影音等）。第一筆「無加選」是預設選中的選項，不可刪除。其他列直接寫名稱跟價格即可。"
+        hint="客戶第二頁的選配項目（SDE 快剪快播、REELS 短影音等），可複選。第一筆「無加選」是舊資料保留的佔位列，前台已隱藏不顯示。其他列直接寫名稱跟價格即可。"
         path="addons"
         columns={[
           { key: 'label', label: '名稱', type: 'text' },
@@ -278,5 +287,7 @@ function Section({ tab }: { tab: TabKey }) {
   }
   if (tab === 'bookings') return <BookingsView />;
   if (tab === 'submissions') return <SubmissionsView />;
+  if (tab === 'announcement') return <AnnouncementView />;
+  if (tab === 'media') return <MediaView />;
   return null;
 }

@@ -15,7 +15,13 @@ publicRoutes.get('/config', async (c) => {
     photographers: d.photographers,
     settings: d.settings,
     bookings: d.bookings,
+    media: d.media ?? [],
   });
+});
+
+publicRoutes.get('/announcement', async (c) => {
+  const d = await read();
+  return c.json({ text: d.announcement ?? '' });
 });
 
 const submissionSchema = z.object({

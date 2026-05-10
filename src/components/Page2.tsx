@@ -96,21 +96,29 @@ export function Page2({ state, update, config }: Props) {
     <div className="page active">
       <div className="stitle">
         <div className="stitle-zh">加 選 項 目</div>
+        <div className="stitle-en" style={{ fontSize: 11, color: 'rgba(255,255,255,.5)', marginTop: 2 }}>可複選</div>
       </div>
       <div className="card">
-        {config.addons.map((a) => (
-          <div
-            key={a.key}
-            className={optClass(state.addonKey === a.key)}
-            onClick={() => update({ addonKey: a.key })}
-          >
-            <div className="rc">
-              <div className="rd" />
-            </div>
-            <div className="opt-t" style={{ fontSize: a.label.length > 8 ? 13 : 14 }}>{a.label}</div>
-            {a.price > 0 && <div className="opt-p">{a.price.toLocaleString('zh-TW')}</div>}
-          </div>
-        ))}
+        {config.addons
+          .filter((a) => a.key !== 'none')
+          .map((a) => {
+            const sel = state.addonKeys.includes(a.key);
+            const toggle = () => {
+              const next = sel
+                ? state.addonKeys.filter((k) => k !== a.key)
+                : [...state.addonKeys, a.key];
+              update({ addonKeys: next });
+            };
+            return (
+              <div key={a.key} className={optClass(sel)} onClick={toggle}>
+                <div className="rc">
+                  <div className="rd" />
+                </div>
+                <div className="opt-t" style={{ fontSize: a.label.length > 8 ? 13 : 14 }}>{a.label}</div>
+                {a.price > 0 && <div className="opt-p">{a.price.toLocaleString('zh-TW')}</div>}
+              </div>
+            );
+          })}
       </div>
 
       {isV && (
