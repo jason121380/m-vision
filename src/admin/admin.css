@@ -17,6 +17,8 @@
 .admin-side button.admin-side-group .caret{display:inline-block;width:12px;font-size:11px;color:var(--ink-muted);text-align:center}
 .admin-side button.admin-side-sub{padding-left:36px;font-size:13.5px}
 .admin-side button.admin-side-sub.hidden-sub{display:none}
+.admin-side-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff3b30;margin-left:8px;vertical-align:middle;box-shadow:0 0 0 2px var(--bg-card);animation:adminDotPulse 1.6s ease-in-out infinite}
+@keyframes adminDotPulse{0%,100%{opacity:1}50%{opacity:.55}}
 .admin-content{flex:1;overflow-y:auto;padding:24px 28px;min-width:0}
 .admin-content h2{font-size:20px;letter-spacing:.1em;margin-bottom:6px;font-weight:600}
 .admin-hint{font-size:12px;color:var(--ink-muted);margin-bottom:18px;line-height:1.6}
@@ -72,6 +74,7 @@
 
 /* === SUBMISSIONS DETAIL EXPANSION === */
 .adt-detail td{padding:18px 20px;background:rgba(255,255,255,.02)}
+.adt-detail-inner{display:block}
 .adt-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
 .adt-detail-fields{display:flex;flex-direction:column;gap:6px}
 .adt-detail-row{display:flex;gap:12px;font-size:13px;line-height:1.5}
@@ -175,8 +178,23 @@
   .adt th,.adt td{padding:6px 8px}
   .adt input[type=text],.adt input[type=number],.adt textarea,.adt select{font-size:12.5px;padding:6px 8px}
 
-  /* 收單細節展開 grid 改單欄 */
+  /* 收單細節展開：因為 .adt 本身在窄螢幕是橫向捲動的（min-width:max-content），
+     展開 row 也會跟著捲到視野外。把展開內容用 sticky + 100vw 寬度釘在當前
+     視窗左邊，並改成單欄 + 標籤上 / 內容下的版面，手機才看得清楚 */
+  .adt-detail td{padding:14px 12px}
+  .adt-detail-inner{
+    position:sticky;left:0;
+    width:calc(100vw - 28px);
+    max-width:calc(100vw - 28px);
+    box-sizing:border-box;
+  }
   .adt-detail-grid{grid-template-columns:1fr;gap:14px}
+  .adt-detail-row{flex-direction:column;gap:2px;border-bottom:1px solid var(--line);padding-bottom:6px}
+  .adt-detail-row:last-child{border-bottom:none;padding-bottom:0}
+  .adt-detail-lbl{min-width:0;font-size:11px;letter-spacing:.05em}
+  .adt-detail-val{font-size:13.5px;line-height:1.45}
+  .adt-detail-pre{font-size:12px;padding:8px 10px}
+  .adt-detail-sig{max-width:100%}
 
   /* Modal 在 mobile 撐滿視窗 */
   .adm-modal{padding:8px}

@@ -108,7 +108,9 @@ export function SubmissionsView() {
                   {expanded && (
                     <tr className="adt-detail">
                       <td colSpan={COL_COUNT}>
-                        <SubmissionDetails s={s} />
+                        <div className="adt-detail-inner">
+                          <SubmissionDetails s={s} />
+                        </div>
                       </td>
                     </tr>
                   )}

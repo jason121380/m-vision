@@ -404,7 +404,18 @@ function MyCalendar({
   today: string;
   onPickDate: (date: string) => void;
 }) {
-  const byDate = useMemo(() => new Map(dates.map((d) => [d.date, d])), [dates]);
+  // 同日可能有多筆 booking（午宴/晚宴），其中一筆是動態主攝、另一筆是平面主攝
+  // 月曆要把兩種角色都標出來，所以用「布林 or」聚合，不用 Map 的 last-write
+  const byDate = useMemo(() => {
+    const m = new Map<string, { asVideo: boolean; asPhoto: boolean }>();
+    for (const d of dates) {
+      const cur = m.get(d.date) ?? { asVideo: false, asPhoto: false };
+      cur.asVideo = cur.asVideo || d.asVideo;
+      cur.asPhoto = cur.asPhoto || d.asPhoto;
+      m.set(d.date, cur);
+    }
+    return m;
+  }, [dates]);
 
   const y = view.getFullYear();
   const m = view.getMonth();
