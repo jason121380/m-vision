@@ -296,18 +296,18 @@ function Section({ tab }: { tab: TabKey }) {
         modalAdd
         addLabel="新增攝影師"
         columns={[
-          { key: 'type', label: '類型', type: 'enum', options: ['video', 'photo'], optionLabels: { video: '動態', photo: '平面' }, width: '10%' },
-          { key: 'name', label: '名字', type: 'text' },
-          { key: 'key', label: 'Key', type: 'readonly', width: '12%' },
-          { key: 'role', label: '角色', type: 'text' },
-          { key: 'price', label: '價格', type: 'number', width: '10%' },
-          { key: 'visible', label: '顯示於前台', type: 'boolean', width: '10%' },
-          { key: 'isSuperUser', label: '最高主管', type: 'boolean', width: '10%' },
-          { key: 'username', label: '登入帳號', type: 'text' },
-          { key: 'password', label: '登入密碼', type: 'password' },
-          { key: 'photo', label: '頭像', type: 'text' },
-          { key: 'desc', label: '介紹', type: 'longtext' },
-          { key: 'portfolio', label: '作品集', type: 'text' },
+          { key: 'type', label: '類型', type: 'enum', options: ['video', 'photo'], optionLabels: { video: '動態', photo: '平面' }, width: '7%' },
+          { key: 'name', label: '名字', type: 'text', width: '8%' },
+          { key: 'key', label: 'Key', type: 'readonly', width: '9%' },
+          { key: 'role', label: '角色', type: 'text', width: '8%' },
+          { key: 'price', label: '價格', type: 'number', width: '6%' },
+          { key: 'visible', label: '顯示於前台', type: 'boolean', width: '7%' },
+          { key: 'isSuperUser', label: '最高主管', type: 'boolean', width: '7%' },
+          { key: 'username', label: '登入帳號', type: 'text', width: '8%' },
+          { key: 'password', label: '登入密碼', type: 'password', width: '8%' },
+          { key: 'photo', label: '頭像', type: 'text', width: '10%' },
+          { key: 'desc', label: '介紹', type: 'longtext', width: '12%' },
+          { key: 'portfolio', label: '作品集', type: 'text', width: '10%' },
         ]}
         blank={() => ({ type: 'video', key: genKey(), name: '', role: '', price: 1000, photo: '', desc: '', portfolio: '', username: '', password: '', visible: true, isSuperUser: false })}
         locked={(r) => r.key === 'any'}

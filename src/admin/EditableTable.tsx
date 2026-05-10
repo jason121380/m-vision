@@ -60,7 +60,7 @@ export function EditableTable<T extends Record<string, unknown>>({
   return (
     <Fragment>
       <div className="adt-wrap">
-      <table className="adt">
+      <table className={`adt${columns.length >= 8 ? ' adt-wide' : ''}`}>
         <thead>
           <tr>
             {columns.map((col) => (

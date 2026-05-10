@@ -36,6 +36,7 @@
 
 .adt-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--r-md)}
 .adt{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;background:var(--bg-card);border-radius:var(--r-md);overflow:hidden;border:1px solid var(--line)}
+.adt.adt-wide{min-width:1200px;table-layout:fixed}
 .adt th{text-align:left;padding:10px 12px;background:var(--accent-soft);color:var(--ink);font-weight:600;font-size:12px;letter-spacing:.06em;border-bottom:1px solid var(--line);white-space:nowrap}
 .adt td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
 .adt tr:last-child td{border-bottom:none}
