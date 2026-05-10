@@ -156,6 +156,14 @@ export function Editor<T extends Record<string, unknown>>({
               </div>
             );
           }
+          if (col.type === 'readonly') {
+            return (
+              <div className="adm-field" key={String(col.key)}>
+                <label>{col.label}</label>
+                <div className="adm-readonly-value">{String(val ?? '')}</div>
+              </div>
+            );
+          }
           return (
             <div className="adm-field" key={String(col.key)}>
               <label>{col.label}</label>
